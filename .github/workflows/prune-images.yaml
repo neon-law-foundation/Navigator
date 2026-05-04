@@ -1,0 +1,32 @@
+---
+name: Prune old container images
+
+on:
+  schedule:
+    # Daily at 04:00 UTC — an hour offset from weekly-release.yaml's 02:00
+    # window so a Sunday release never races against a prune run.
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: prune-images
+  cancel-in-progress: false
+
+permissions:
+  packages: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Delete container versions older than 7 days
+        uses: snok/container-retention-policy@v3
+        with:
+          account: neon-law-foundation
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-names: web
+          image-tags: "!latest !v*"
+          cut-off: 7d
+          keep-n-most-recent: 5
+          tag-selection: both

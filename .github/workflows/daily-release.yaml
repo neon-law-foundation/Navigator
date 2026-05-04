@@ -1,0 +1,220 @@
+---
+name: Daily Release
+
+on:
+  schedule:
+    # Run every day at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    # Allow manual triggering
+
+concurrency:
+  group: daily-release
+  cancel-in-progress: false
+
+env:
+  SWIFT_VERSION: "6.3"
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION=$(date +"%y.%m.%d")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Generated version: $VERSION"
+
+      - name: Check if release already exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "Release v$VERSION already exists, skipping"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release v$VERSION does not exist, proceeding"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Swift toolchain
+        if: steps.check_release.outputs.exists == 'false'
+        # Pinned to v3.0.0-beta.1 — see ci.yaml for rationale. Retarget when stable v3 ships.
+        uses: swift-actions/setup-swift@v3.0.0-beta.1
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+
+      - name: Cache Swift Package Manager dependencies
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.cache/org.swift.swiftpm
+          key: spm-macos-release-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            spm-macos-release-
+
+      - name: Build for Apple Silicon (arm64)
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          swift build -c release --product NavigatorCLI --arch arm64
+          mkdir -p dist/arm64
+          cp .build/arm64-apple-macosx/release/NavigatorCLI dist/arm64/navigator
+
+      - name: Build for Intel (x86_64)
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          swift build -c release --product NavigatorCLI --arch x86_64
+          mkdir -p dist/x86_64
+          cp .build/x86_64-apple-macosx/release/NavigatorCLI dist/x86_64/navigator
+
+      - name: Create universal binary
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          mkdir -p dist/universal
+          lipo -create \
+            dist/arm64/navigator \
+            dist/x86_64/navigator \
+            -output dist/universal/navigator
+          lipo -info dist/universal/navigator
+
+      - name: Verify binaries
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          echo "Verifying arm64 binary..."
+          file dist/arm64/navigator
+          dist/arm64/navigator --help || true
+
+          echo "Verifying x86_64 binary..."
+          file dist/x86_64/navigator
+
+          echo "Verifying universal binary..."
+          file dist/universal/navigator
+          dist/universal/navigator --help
+
+      - name: Package binaries
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p release
+
+          tar -czf "release/navigator-${VERSION}-macos-arm64.tar.gz" \
+            -C dist/arm64 navigator
+
+          tar -czf "release/navigator-${VERSION}-macos-x86_64.tar.gz" \
+            -C dist/x86_64 navigator
+
+          tar -czf "release/navigator-${VERSION}-macos-universal.tar.gz" \
+            -C dist/universal navigator
+
+          cd release
+          shasum -a 256 *.tar.gz > checksums.txt
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
+        id: create_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "v$VERSION" \
+            --title "Navigator CLI v$VERSION" \
+            --notes "Daily automated release for $(date +%Y-%m-%d).
+
+          ## Installation
+
+          ### Homebrew (Recommended)
+          \`\`\`bash
+          brew tap neon-law-foundation/tap
+          brew install navigator
+          \`\`\`
+
+          ### Manual Download
+          Download the appropriate binary for your system:
+          - **Apple Silicon (M1/M2/M3)**: \`navigator-${VERSION}-macos-arm64.tar.gz\`
+          - **Intel**: \`navigator-${VERSION}-macos-x86_64.tar.gz\`
+          - **Universal**: \`navigator-${VERSION}-macos-universal.tar.gz\`
+
+          Then extract and move to your PATH:
+          \`\`\`bash
+          tar -xzf navigator-${VERSION}-macos-universal.tar.gz
+          sudo mv navigator /usr/local/bin/
+          \`\`\`
+          " \
+            release/navigator-*.tar.gz \
+            release/checksums.txt
+
+      - name: Calculate checksums for formula
+        if: steps.check_release.outputs.exists == 'false'
+        id: checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARM64_SHA=$(shasum -a 256 "release/navigator-${VERSION}-macos-arm64.tar.gz" | awk '{print $1}')
+          X86_64_SHA=$(shasum -a 256 "release/navigator-${VERSION}-macos-x86_64.tar.gz" | awk '{print $1}')
+          echo "arm64_sha=$ARM64_SHA" >> "$GITHUB_OUTPUT"
+          echo "x86_64_sha=$X86_64_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Update Homebrew formula
+        if: steps.check_release.outputs.exists == 'false'
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping Homebrew formula update."
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.version }}"
+          ARM64_SHA="${{ steps.checksums.outputs.arm64_sha }}"
+          X86_64_SHA="${{ steps.checksums.outputs.x86_64_sha }}"
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/neon-law-foundation/homebrew-tap.git" tap
+
+          mkdir -p tap/Formula
+
+          cat > tap/Formula/navigator.rb << FORMULA_EOF
+          class Navigator < Formula
+            desc "Questionnaires, Workflows, and Templates to create computable contracts"
+            homepage "https://github.com/neon-law-foundation/Navigator"
+            version "${VERSION}"
+            license "Apache-2.0"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/neon-law-foundation/Navigator/releases/download/v${VERSION}/navigator-${VERSION}-macos-arm64.tar.gz"
+                sha256 "${ARM64_SHA}"
+              end
+              on_intel do
+                url "https://github.com/neon-law-foundation/Navigator/releases/download/v${VERSION}/navigator-${VERSION}-macos-x86_64.tar.gz"
+                sha256 "${X86_64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "navigator"
+            end
+
+            test do
+              assert_match "^navigator ", shell_output("#{bin}/navigator --version")
+            end
+          end
+          FORMULA_EOF
+
+          sed -i '' 's/^          //' tap/Formula/navigator.rb
+
+          cd tap
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git checkout -B main
+          git add Formula/navigator.rb
+          git commit -m "chore: update navigator to v${VERSION}"
+          git push -u origin main

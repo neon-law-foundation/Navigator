@@ -1,0 +1,29 @@
+import FluentKit
+import Foundation
+
+// Directory of people with their basic contact information
+public final class Person: Model, @unchecked Sendable {
+    public static let schema = "people"
+
+    // Unique identifier for the person — a UUIDv4 generated client-side by Fluent.
+    @ID(key: .id)
+    public var id: UUID?
+
+    // Full name of the person
+    @Field(key: "name")
+    public var name: String
+
+    // Email address of the person, must be unique
+    @Field(key: "email")
+    public var email: String
+
+    // Timestamp when the person record was created
+    @Timestamp(key: "inserted_at", on: .create)
+    public var insertedAt: Date?
+
+    // Timestamp when the person record was last updated
+    @Timestamp(key: "updated_at", on: .update)
+    public var updatedAt: Date?
+
+    public init() {}
+}

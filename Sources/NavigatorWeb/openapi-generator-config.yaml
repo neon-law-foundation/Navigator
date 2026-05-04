@@ -1,0 +1,8 @@
+generate:
+  - types
+  - server
+additionalImports:
+  - Foundation
+typeOverrides:
+  schemas:
+    UUID: Foundation.UUID

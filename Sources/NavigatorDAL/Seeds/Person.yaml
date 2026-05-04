@@ -1,0 +1,12 @@
+---
+lookup_fields:
+  - email
+records:
+  - email: nick@neonlaw.com
+    name: Nick Shook
+  - email: test-admin@neonlaw.com
+    name: E2E Admin
+  - email: test-staff@neonlaw.com
+    name: E2E Staff
+  - email: test-client@neonlaw.com
+    name: E2E Client

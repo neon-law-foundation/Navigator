@@ -1,0 +1,76 @@
+---
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SWIFT_VERSION: "6.3"
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is not supported. swift-nio-ssl (CNIOBoringSSL) fails to
+        # compile on Windows SDK 10.0.26100.0 due to winsock.h/winsock2.h
+        # redefinition conflicts.
+        os: [ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: Install Swift toolchain
+        # Pinned to v3.0.0-beta.1 — the moving `@v3` tag follows beta releases and broke our
+        # CI when upstream re-tagged. Swift 6.3 isn't supported by the v2.x line, so we stay
+        # on the only v3 build that's been validated against this repo. Retarget to a stable
+        # v3 release once one ships (https://github.com/swift-actions/setup-swift/releases).
+        uses: swift-actions/setup-swift@v3.0.0-beta.1
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+
+      - name: Run Swift Format Lint
+        run: swift format lint --strict --recursive --parallel --no-color-diagnostics .
+
+      - name: Cache Swift Package Manager dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.cache/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Run Swift Build (Strict - Fail on Warnings)
+        run: swift build -Xswiftc -warnings-as-errors
+
+      - name: Build release binary
+        if: runner.os == 'macOS'
+        run: swift build -c release --product NavigatorCLI
+
+      - name: Run binary smoke tests
+        if: runner.os == 'macOS'
+        run: |
+          # list questions and list jurisdictions must exit 0 — they use static seed
+          # data compiled in by GenerateSeedsPlugin and require no bundle at runtime.
+          .build/release/NavigatorCLI list questions
+          .build/release/NavigatorCLI list jurisdictions
+          # lint may exit 1 when violations are found in the example files — that is
+          # normal operation. A crash from a missing bundle produces exit code 134
+          # (SIGABRT). We accept 0 or 1 and fail on anything higher.
+          .build/release/NavigatorCLI lint Sources/NavigatorDAL/Examples || lint_exit=$?
+          if [ "${lint_exit:-0}" -gt 1 ]; then
+            echo "navigator lint crashed with exit code ${lint_exit}" >&2
+            exit "${lint_exit}"
+          fi
+
+      - name: Run tests
+        run: swift test

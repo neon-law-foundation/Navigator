@@ -1,0 +1,12 @@
+lookup_fields:
+  - repository_name
+
+records:
+  - repository_name: navigator-examples
+    aws_account_id: "000000000000"
+    aws_region: us-east-1
+    codecommit_repository_id: 00000000-0000-0000-0000-000000000000
+    repository_arn: arn:aws:codecommit:us-east-1:000000000000:navigator-examples
+    description: Example notations for development and seeding
+    project:
+      codename: navigator-examples

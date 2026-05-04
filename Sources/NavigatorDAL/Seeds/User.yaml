@@ -1,0 +1,15 @@
+lookup_fields:
+  - person_id
+records:
+  - person:
+      email: nick@neonlaw.com
+    role: client
+  - person:
+      email: test-admin@neonlaw.com
+    role: admin
+  - person:
+      email: test-staff@neonlaw.com
+    role: staff
+  - person:
+      email: test-client@neonlaw.com
+    role: client

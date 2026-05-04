@@ -1,0 +1,14 @@
+lookup_fields:
+  - person_id
+  - project_id
+records:
+  - person:
+      email: test-staff@neonlaw.com
+    project:
+      codename: e2e-test
+    role: staff
+  - person:
+      email: test-client@neonlaw.com
+    project:
+      codename: e2e-test
+    role: client

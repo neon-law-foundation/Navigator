@@ -1,0 +1,1495 @@
+openapi: "3.1.0"
+info:
+  title: NLF API
+  version: 0.1.0
+  description: Legal platform API for Neon Law Foundation
+
+paths:
+  /questions:
+    get:
+      operationId: listQuestions
+      summary: List all questions (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: An array of questions sorted by code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    post:
+      operationId: createQuestion
+      summary: Create question (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Question"
+      responses:
+        "200":
+          description: Created question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      summary: Get dashboard snapshot
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshot"
+        "401":
+          description: Unauthorized
+
+  /account:
+    get:
+      operationId: getAccount
+      summary: Get account summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountSummary"
+        "401":
+          description: Unauthorized
+    patch:
+      operationId: updateAccount
+      summary: Update account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Updated account summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountSummary"
+        "401":
+          description: Unauthorized
+
+  /mailboxes:
+    get:
+      operationId: getMailboxes
+      summary: List mailboxes
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of mailboxes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MailboxSummary"
+        "401":
+          description: Unauthorized
+
+  /projects:
+    get:
+      operationId: listProjects
+      summary: List projects visible to the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectSummary"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createProject
+      summary: Create a new project
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "200":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      summary: Get project detail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /projects/{id}/files:
+    get:
+      operationId: listProjectFiles
+      summary: List files for a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: List of project files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectFile"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /formations/notations:
+    get:
+      operationId: getFormationNotations
+      summary: List notation summaries
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of notation summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotationSummary"
+        "401":
+          description: Unauthorized
+
+  /formations/notations/{notationCode}/instances:
+    post:
+      operationId: createFormationInstance
+      summary: Create formation instance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notationCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFormationInstanceRequest"
+      responses:
+        "200":
+          description: Created flow instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowInstance"
+        "401":
+          description: Unauthorized
+
+  /formations/instances:
+    get:
+      operationId: getFormationInstances
+      summary: List formation instances
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of flow instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowInstance"
+        "401":
+          description: Unauthorized
+
+  /formations/instances/{id}:
+    get:
+      operationId: getFormationInstance
+      summary: Get formation instance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Flow instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowInstance"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /formations/instances/{id}/steps:
+    post:
+      operationId: submitFormationStep
+      summary: Submit formation step
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitFormationStepRequest"
+      responses:
+        "200":
+          description: Updated flow instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowInstance"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /subscriptions:
+    get:
+      operationId: getSubscriptions
+      summary: List subscriptions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createSubscription
+      summary: Create subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionRequest"
+      responses:
+        "200":
+          description: Created subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Unauthorized
+
+  /subscriptions/{id}:
+    delete:
+      operationId: cancelSubscription
+      summary: Cancel subscription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Subscription cancelled
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: List users (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 50
+            maximum: 200
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - client
+              - staff
+              - admin
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      summary: Get a single user (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDetail"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /users/{id}/role:
+    patch:
+      operationId: updateUserRole
+      summary: Change a user's role (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleRequest"
+      responses:
+        "200":
+          description: Updated user detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDetail"
+        "400":
+          description: Invalid role value
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /users/{id}/role-history:
+    get:
+      operationId: getUserRoleHistory
+      summary: Get role change audit log for a user (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Audit log entries newest-first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleAuditEntry"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /mail/inbound/ingest:
+    post:
+      operationId: ingestInboundEmail
+      summary: Ingest an inbound email from the SES parser Lambda
+      security: []
+      parameters:
+        - name: X-NLF-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundEmailRequest"
+      responses:
+        "200":
+          description: Email ingested successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestedEmail"
+        "401":
+          description: Invalid HMAC signature
+        "409":
+          description: Duplicate message_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestedEmail"
+        "422":
+          description: Validation error
+
+  /people:
+    get:
+      operationId: listPeople
+      summary: List people (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of people
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Person"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /questions/{id}:
+    patch:
+      operationId: updateQuestion
+      summary: Update question (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuestionRequest"
+      responses:
+        "200":
+          description: Updated question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteQuestion
+      summary: Delete question (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Question deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+
+    Question:
+      type: object
+      required:
+        - code
+        - prompt
+        - questionType
+      properties:
+        id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        code:
+          type: string
+        prompt:
+          type: string
+        questionType:
+          $ref: "#/components/schemas/QuestionType"
+        helpText:
+          type:
+            - string
+            - "null"
+        choices:
+          type:
+            - object
+            - "null"
+          additionalProperties:
+            type: string
+        insertedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        updatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    QuestionType:
+      type: string
+      enum:
+        - string
+        - text
+        - date
+        - datetime
+        - number
+        - yes_no
+        - radio
+        - select
+        - multi_select
+        - secret
+        - phone
+        - email
+        - ssn
+        - ein
+        - file
+        - person
+        - address
+        - org
+
+    UpdateQuestionRequest:
+      type: object
+      properties:
+        prompt:
+          type:
+            - string
+            - "null"
+        questionType:
+          type:
+            - string
+            - "null"
+        code:
+          type:
+            - string
+            - "null"
+        helpText:
+          type:
+            - string
+            - "null"
+        choices:
+          type:
+            - object
+            - "null"
+          additionalProperties:
+            type: string
+
+    AccountSummary:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+
+    UpdateAccountRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    MailboxSummary:
+      type: object
+      required:
+        - id
+        - mailboxNumber
+        - officeName
+        - officeAddress
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        mailboxNumber:
+          type: integer
+        officeName:
+          type: string
+        officeAddress:
+          type: string
+        forwardingEmail:
+          type:
+            - string
+            - "null"
+        activatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    DashboardSnapshot:
+      type: object
+      required:
+        - person
+        - activeFormations
+        - completedFormations
+        - quickStartNotations
+        - pendingTaskCount
+        - assignedMailboxes
+      properties:
+        person:
+          $ref: "#/components/schemas/AccountSummary"
+        activeFormations:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormationSummary"
+        completedFormations:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormationSummary"
+        quickStartNotations:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuickStartNotation"
+        pendingTaskCount:
+          type: integer
+        assignedMailboxes:
+          type: array
+          items:
+            $ref: "#/components/schemas/MailboxSummary"
+
+    FormationSummary:
+      type: object
+      required:
+        - id
+        - notationCode
+        - title
+        - status
+        - stageLabel
+        - isCompleted
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        notationCode:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        stageLabel:
+          type: string
+        progressPercent:
+          type:
+            - number
+            - "null"
+          format: double
+        isCompleted:
+          type: boolean
+        nextPrompt:
+          type:
+            - string
+            - "null"
+        updatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    QuickStartNotation:
+      type: object
+      required:
+        - code
+        - title
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type:
+            - string
+            - "null"
+
+    NotationSummary:
+      type: object
+      required:
+        - code
+        - title
+        - respondentType
+        - flowStateCount
+        - alignmentStateCount
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type:
+            - string
+            - "null"
+        respondentType:
+          type: string
+        flowStateCount:
+          type: integer
+        alignmentStateCount:
+          type: integer
+
+    FlowInstance:
+      type: object
+      required:
+        - id
+        - notationCode
+        - status
+        - kind
+        - isFlowComplete
+        - isFormationComplete
+        - isCompleted
+        - history
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        notationCode:
+          type: string
+        status:
+          type: string
+          enum:
+            - started
+            - awaitingPayment
+            - preparingDocs
+            - awaitingNotary
+            - readyToFile
+            - paperworkFiled
+            - formed
+            - issue
+            - cancelled
+            - active
+            - waiting
+            - completed
+        kind:
+          type: string
+          enum:
+            - client
+            - alignment
+        currentState:
+          type:
+            - string
+            - "null"
+        progressStage:
+          type:
+            - string
+            - "null"
+        progressPercent:
+          type:
+            - number
+            - "null"
+          format: double
+        isFlowComplete:
+          type: boolean
+        isFormationComplete:
+          type: boolean
+        isCompleted:
+          type: boolean
+        currentStep:
+          $ref: "#/components/schemas/StateDescriptor"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepHistory"
+
+    StateDescriptor:
+      type: object
+      required:
+        - id
+        - questionCode
+        - contextTokens
+        - prompt
+        - component
+      properties:
+        id:
+          type: string
+        questionCode:
+          type: string
+        contextTokens:
+          type: array
+          items:
+            type: string
+        prompt:
+          type: string
+        helpText:
+          type:
+            - string
+            - "null"
+        component:
+          $ref: "#/components/schemas/ComponentMetadata"
+
+    ComponentMetadata:
+      type: object
+      required:
+        - kind
+        - allowsMultipleSelection
+      properties:
+        kind:
+          type: string
+        allowsMultipleSelection:
+          type: boolean
+        choices:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/ComponentChoice"
+
+    ComponentChoice:
+      type: object
+      required:
+        - value
+        - label
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+
+    StepHistory:
+      type: object
+      required:
+        - stateID
+        - questionCode
+        - actorRole
+      properties:
+        stateID:
+          type: string
+        questionCode:
+          type: string
+        answeredAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        actorRole:
+          type: string
+
+    CreateFormationInstanceRequest:
+      type: object
+      properties:
+        respondentEntityID:
+          type:
+            - string
+            - "null"
+          format: uuid
+        respondentPersonID:
+          type:
+            - string
+            - "null"
+          format: uuid
+        kind:
+          type:
+            - string
+            - "null"
+          enum:
+            - client
+            - alignment
+
+    SubmitFormationStepRequest:
+      type: object
+      required:
+        - stateID
+        - answer
+      properties:
+        stateID:
+          type: string
+        answer:
+          $ref: "#/components/schemas/AnswerPayload"
+        actorRole:
+          type:
+            - string
+            - "null"
+
+    AnswerPayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+        stringValue:
+          type:
+            - string
+            - "null"
+        choiceValue:
+          type:
+            - string
+            - "null"
+        multiChoiceValue:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        metadata:
+          type:
+            - object
+            - "null"
+          additionalProperties:
+            type: string
+        payloadAlgorithm:
+          type:
+            - string
+            - "null"
+        payloadValue:
+          type:
+            - string
+            - "null"
+
+    Subscription:
+      type: object
+      required:
+        - id
+        - subscriptionType
+        - billingInterval
+        - status
+        - priceCents
+        - currency
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        subscriptionType:
+          type: string
+        billingInterval:
+          type: string
+        status:
+          type: string
+        priceCents:
+          type: integer
+        currency:
+          type: string
+        nextBillingDate:
+          type:
+            - string
+            - "null"
+          format: date-time
+        xeroRepeatingInvoiceId:
+          type:
+            - string
+            - "null"
+
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - type
+        - frequency
+      properties:
+        type:
+          type: string
+        frequency:
+          type: string
+        mailboxId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        flowInstanceId:
+          type:
+            - string
+            - "null"
+          format: uuid
+
+    Person:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        insertedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        updatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    ProjectSummary:
+      type: object
+      required:
+        - id
+        - codename
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        codename:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        status:
+          type:
+            - string
+            - "null"
+          enum:
+            - active
+            - closed
+            - archived
+        projectType:
+          type:
+            - string
+            - "null"
+          enum:
+            - litigation
+            - transaction
+            - advisory
+        insertedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    ProjectDetail:
+      type: object
+      required:
+        - id
+        - codename
+        - files
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        codename:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        status:
+          type:
+            - string
+            - "null"
+          enum:
+            - active
+            - closed
+            - archived
+        projectType:
+          type:
+            - string
+            - "null"
+          enum:
+            - litigation
+            - transaction
+            - advisory
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectFile"
+        insertedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    ProjectFile:
+      type: object
+      required:
+        - id
+        - title
+        - s3Key
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        title:
+          type: string
+        s3Key:
+          type: string
+        insertedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      required:
+        - codename
+      properties:
+        codename:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        projectType:
+          type:
+            - string
+            - "null"
+          enum:
+            - litigation
+            - transaction
+            - advisory
+
+    UserRole:
+      type: string
+      enum:
+        - client
+        - staff
+        - admin
+
+    UserSummary:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - insertedAt
+        - updatedAt
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+        insertedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserDetail:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - personId
+        - insertedAt
+        - updatedAt
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+        personId:
+          $ref: "#/components/schemas/UUID"
+        insertedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateUserRoleRequest:
+      type: object
+      required:
+        - role
+        - reason
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+        reason:
+          type: string
+
+    RoleAuditEntry:
+      type: object
+      required:
+        - id
+        - userId
+        - changedByUserId
+        - previousRole
+        - newRole
+        - reason
+        - insertedAt
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
+        changedByUserId:
+          $ref: "#/components/schemas/UUID"
+        previousRole:
+          $ref: "#/components/schemas/UserRole"
+        newRole:
+          $ref: "#/components/schemas/UserRole"
+        reason:
+          type: string
+        insertedAt:
+          type: string
+          format: date-time
+
+    InboundEmailRequest:
+      type: object
+      required:
+        - messageId
+        - fromAddress
+        - toAddress
+        - subject
+        - rawS3Key
+        - rawBucket
+        - spamVerdict
+        - virusVerdict
+        - dkimVerdict
+        - dmarcVerdict
+        - receivedAt
+      properties:
+        messageId:
+          type: string
+        inReplyTo:
+          type:
+            - string
+            - "null"
+        references:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        fromAddress:
+          type: string
+        fromName:
+          type:
+            - string
+            - "null"
+        toAddress:
+          type: string
+        ccAddresses:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        bccAddresses:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        subject:
+          type: string
+        textBody:
+          type:
+            - string
+            - "null"
+        htmlBody:
+          type:
+            - string
+            - "null"
+        rawS3Key:
+          type: string
+        rawBucket:
+          type: string
+        spamVerdict:
+          type: string
+        virusVerdict:
+          type: string
+        dkimVerdict:
+          type: string
+        dmarcVerdict:
+          type: string
+        receivedAt:
+          type: string
+          format: date-time
+        attachments:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/InboundEmailAttachment"
+
+    InboundEmailAttachment:
+      type: object
+      required:
+        - filename
+        - contentType
+        - sizeBytes
+        - s3Key
+        - s3Bucket
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        contentId:
+          type:
+            - string
+            - "null"
+        s3Key:
+          type: string
+        s3Bucket:
+          type: string
+
+    IngestedEmail:
+      type: object
+      required:
+        - id
+        - messageId
+        - threadId
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        messageId:
+          type: string
+        threadId:
+          type: string
