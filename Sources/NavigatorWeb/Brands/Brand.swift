@@ -36,6 +36,7 @@ public struct NLFBrand: Brand {
     public let logoPath: String = "/logo.svg"
     public let navLinks: [NavLink] = [
         NavLink(label: "About", href: "/about"),
+        NavLink(label: "Navigator", href: "/navigator"),
         NavLink(label: "Workshops", href: "/workshops"),
         NavLink(label: "Blog", href: "/blog"),
         NavLink(label: "Contact", href: "/contact"),

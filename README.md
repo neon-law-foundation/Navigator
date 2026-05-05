@@ -32,15 +32,84 @@ workflows defined alongside the documents provide the hooks for plugging in auto
 
 ## Installation
 
-### Via Homebrew (Recommended)
+### macOS — Homebrew (recommended)
 
 ```bash
-# Add the tap
 brew tap neon-law-foundation/tap
-
-# Install the Navigator CLI
 brew install navigator
 ```
+
+The formula in
+[neon-law-foundation/homebrew-tap](https://github.com/neon-law-foundation/homebrew-tap)
+is updated daily at 02:00 UTC by `.github/workflows/daily-release.yaml`, which
+publishes a versioned macOS release for Apple Silicon and Intel and rewrites
+`Formula/navigator.rb` with the new tarball URLs and SHAs.
+
+Upgrade later with:
+
+```bash
+brew update && brew upgrade navigator
+```
+
+### Linux — build from source
+
+No Homebrew formula is published for Linux. Build the `NavigatorCLI` product
+directly with Swift 6.3 or newer. The instructions below have been verified on
+Ubuntu, Fedora, and Arch; any distro with a Swift 6.3+ toolchain will work.
+
+#### 1. Install Swift 6.3+
+
+[`swiftly`](https://swiftlang.github.io/swiftly/) is the easiest path and
+manages multiple toolchains side by side:
+
+```bash
+curl -L https://swiftlang.github.io/swiftly/swiftly-install.sh | bash
+. ~/.local/share/swiftly/env.sh
+swiftly install 6.3
+```
+
+If your package manager ships Swift 6.3+ you can use that instead — for
+example, `sudo pacman -S swift` on Arch.
+
+#### 2. Install system dependencies
+
+Ubuntu / Debian:
+
+```bash
+sudo apt-get install -y build-essential libcurl4-openssl-dev \
+  libsqlite3-dev libxml2-dev
+```
+
+Fedora / RHEL:
+
+```bash
+sudo dnf install -y gcc libcurl-devel sqlite-devel libxml2-devel
+```
+
+Arch:
+
+```bash
+sudo pacman -S --needed base-devel curl sqlite libxml2
+```
+
+#### 3. Build and install
+
+```bash
+git clone https://github.com/neon-law-foundation/Navigator.git
+cd Navigator
+swift build -c release --product NavigatorCLI
+install -Dm755 .build/release/NavigatorCLI ~/.local/bin/navigator
+```
+
+Make sure `~/.local/bin` is on your `PATH`, then verify the install:
+
+```bash
+navigator --version
+navigator --help
+```
+
+To rebuild after pulling updates, repeat step 3 from inside the cloned
+directory.
 
 ## Commands
 
@@ -315,10 +384,11 @@ the entire CLI is blocked until that upstream issue is resolved.
 
 ## Homebrew Distribution
 
-Releases are published weekly via `.github/workflows/weekly-release.yaml`. The workflow builds arm64,
-x86_64, and universal macOS binaries, creates a GitHub release with checksums, and updates
-`Formula/navigator.rb` in
-[neon-law-foundation/homebrew-tap](https://github.com/neon-law-foundation/homebrew-tap) — the
-actual GitHub repository behind `brew tap neon-law-foundation/tap`.
+Releases are published daily at 02:00 UTC via
+`.github/workflows/daily-release.yaml`. The workflow builds arm64, x86_64,
+and universal macOS binaries, creates a GitHub release with checksums, and
+updates `Formula/navigator.rb` in
+[neon-law-foundation/homebrew-tap](https://github.com/neon-law-foundation/homebrew-tap) —
+the actual GitHub repository behind `brew tap neon-law-foundation/tap`.
 
 © 2026 Neon Law Foundation.

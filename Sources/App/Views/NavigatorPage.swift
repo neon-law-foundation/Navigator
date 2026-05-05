@@ -73,7 +73,71 @@ struct NavigatorPage: HTML {
                         )
                     }
                 }
+                section(.class("mb-12")) {
+                    h2(.class("text-2xl font-bold text-gray-900 mb-4")) { "Install the CLI" }
+                    p(.class("text-gray-700 leading-relaxed mb-6")) {
+                        "Navigator ships as a single command-line tool. macOS users install "
+                        "it with Homebrew; every other platform builds from source."
+                    }
+                    h3(.class("text-lg font-semibold text-gray-900 mb-3")) {
+                        "macOS \u{2014} Homebrew"
+                    }
+                    NavigatorCodeBlock(
+                        text:
+                            "brew tap neon-law-foundation/tap\n"
+                            + "brew install navigator"
+                    )
+                    h3(.class("text-lg font-semibold text-gray-900 mt-6 mb-3")) {
+                        "Linux \u{2014} build from source"
+                    }
+                    p(.class("text-gray-700 leading-relaxed mb-3")) {
+                        "Install Swift 6.3 or newer (the easiest path is "
+                        a(
+                            .href("https://swiftlang.github.io/swiftly/"),
+                            .class("font-medium hover:underline"),
+                            .style("color:\(brand.primaryColor)"),
+                            .target(.blank),
+                            .rel("noopener noreferrer")
+                        ) { "swiftly" }
+                        "), then build the CLI:"
+                    }
+                    NavigatorCodeBlock(
+                        text:
+                            "git clone https://github.com/neon-law-foundation/Navigator.git\n"
+                            + "cd Navigator\n"
+                            + "swift build -c release --product NavigatorCLI\n"
+                            + "install -Dm755 .build/release/NavigatorCLI ~/.local/bin/navigator"
+                    )
+                    p(.class("text-gray-700 leading-relaxed mt-6")) {
+                        "See the "
+                        a(
+                            .href(
+                                "https://github.com/neon-law-foundation/Navigator#installation"
+                            ),
+                            .class("font-medium hover:underline"),
+                            .style("color:\(brand.primaryColor)"),
+                            .target(.blank),
+                            .rel("noopener noreferrer")
+                        ) { "README" }
+                        " for the full per-distro breakdown, including system "
+                        "dependencies for Ubuntu, Fedora, and Arch."
+                    }
+                }
             }
+        }
+    }
+}
+
+private struct NavigatorCodeBlock: HTML {
+    let text: String
+
+    var body: some HTML {
+        pre(
+            .class(
+                "bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"
+            )
+        ) {
+            code { text }
         }
     }
 }
