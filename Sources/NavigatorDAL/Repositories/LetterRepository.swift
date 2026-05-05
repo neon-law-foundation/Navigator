@@ -1,4 +1,5 @@
 import FluentKit
+import Foundation
 
 /// Provides database access operations for `Letter` records.
 public struct LetterRepository: Sendable {

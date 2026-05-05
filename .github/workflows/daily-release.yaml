@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SWIFT_VERSION: "6.3"
+  SWIFT_VERSION: "6.3.1"
 
 jobs:
   build-and-release:
@@ -46,8 +46,8 @@ jobs:
 
       - name: Install Swift toolchain
         if: steps.check_release.outputs.exists == 'false'
-        # Pinned to v3.0.0-beta.1 — see ci.yaml for rationale. Retarget when stable v3 ships.
-        uses: swift-actions/setup-swift@v3.0.0-beta.1
+        # Using SwiftyLab/setup-swift — see ci.yaml for rationale.
+        uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: ${{ env.SWIFT_VERSION }}
 

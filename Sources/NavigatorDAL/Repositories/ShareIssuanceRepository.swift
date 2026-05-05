@@ -1,4 +1,5 @@
 import FluentKit
+import Foundation
 
 /// Provides database access operations for `ShareIssuance` records.
 public struct ShareIssuanceRepository: Sendable {
