@@ -1,4 +1,5 @@
 import FluentKit
+import Foundation
 
 /// Provides database access operations for `Mailroom` records.
 public struct MailroomRepository: Sendable {
