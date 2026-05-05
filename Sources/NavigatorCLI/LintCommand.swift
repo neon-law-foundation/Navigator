@@ -27,6 +27,7 @@ struct LintCommand: Command {
             F103_PascalCaseFilename(),
             F104_FlowQuestionCodes(validCodes: validCodes),
             F105_ConfidentialRequired(),
+            F106_StaffReviewRequired(),
             M001_HeadingIncrement(),
             M003_HeadingStyle(),
             M004_ULStyle(),
