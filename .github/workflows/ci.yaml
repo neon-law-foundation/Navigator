@@ -28,11 +28,11 @@ jobs:
       - uses: "actions/checkout@v4"
 
       - name: Install Swift toolchain
-        # Pinned to v3.0.0-beta.1 — the moving `@v3` tag follows beta releases and broke our
-        # CI when upstream re-tagged. Swift 6.3 isn't supported by the v2.x line, so we stay
-        # on the only v3 build that's been validated against this repo. Retarget to a stable
-        # v3 release once one ships (https://github.com/swift-actions/setup-swift/releases).
-        uses: swift-actions/setup-swift@v3.0.0-beta.1
+        # Switched off swift-actions/setup-swift after its v3.0.0-beta.1 broke Swiftly GPG
+        # verification on Ubuntu (upstream issue #798, fix PR #797 still unmerged). SwiftyLab
+        # is actively maintained, supports Swift 6.3.x, and exposes the same `swift-version`
+        # input.
+        uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: ${{ env.SWIFT_VERSION }}
 
