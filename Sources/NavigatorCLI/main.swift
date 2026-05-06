@@ -31,8 +31,9 @@ func printUsage() {
                               or a path to a .md file. Walks the questionnaire, prompts
                               for each question, and creates the notation with interpolated
                               content. Defaults to --person 1 (local dev identity).
-          claude setup        Create a CLAUDE.md and .claude/commands/review.md in the current directory
-                              CLAUDE.md includes the Navigator glossary and legal review guidance
+          setup               Provision ~/Work/ with AGENTS.md, CLAUDE.md, and .claude/commands/review.md
+                              AGENTS.md is the LLM-agnostic guidance file (IRAC, glossary, document rules)
+                              CLAUDE.md is a one-line pointer that reads "Read AGENTS.md."
                               review.md provides the /review skill: a 12-agent Lawyer Council
                               where each agent embodies a zodiac sign and legal specialty —
                               Aries (Trial), Taurus (Estate), Gemini (Transactional),
@@ -62,7 +63,7 @@ func printUsage() {
           navigator notation trusts__nevada
           navigator notation Sources/NavigatorDAL/Examples/Trusts/nevada.md
           navigator notation trusts__nevada --person 1
-          navigator claude setup
+          navigator setup
         """
     )
 }
@@ -198,16 +199,8 @@ Task {
                 entityID: entityID
             )
 
-        case "claude":
-            let subCommand = arguments.count > 2 ? arguments[2] : ""
-            switch subCommand {
-            case "setup":
-                command = ClaudeSetupCommand()
-            default:
-                print("Error: Unknown claude subcommand: '\(subCommand)'")
-                print("Usage: navigator claude setup")
-                exit(1)
-            }
+        case "setup":
+            command = SetupCommand()
 
         case "--help", "-h":
             printUsage()

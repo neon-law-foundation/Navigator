@@ -235,6 +235,34 @@ navigator pdf nevada.md  # Creates nevada.pdf
 - Lines ≤120 characters
 - `pandoc` installed: `brew install pandoc`
 
+### `navigator setup`
+
+Provisions `~/Work/` with the LLM-agnostic guidance files every coding agent
+(Claude, Cursor, Codex, etc.) reads to operate as a Navigator-aware attorney.
+
+```bash
+navigator setup
+```
+
+The command always writes to `~/Work/` regardless of the directory it is run
+from. Existing files are overwritten, but the output reports whether each
+file was created, updated, or left unchanged.
+
+**Output layout:**
+
+```text
+~/Work/
+├── AGENTS.md                       # IRAC, Navigator glossary, document rules
+├── CLAUDE.md                       # one line: "Read AGENTS.md."
+└── .claude/
+    └── commands/
+        └── review.md               # /review skill — 12-zodiac Lawyer Council
+```
+
+**Editing the bundled content:** the source markdown lives in
+`Sources/NavigatorCLI/AgentDocumentation/`. Edit those files and rebuild —
+no Swift recompile of string literals required.
+
 ## Architecture
 
 The Navigator project is organized into three main Swift Package Manager targets:

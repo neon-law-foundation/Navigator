@@ -11,7 +11,7 @@ public enum FileFilters {
     ]
 
     private static let excludedDirectories: Set<String> = [
-        "ClaudeTemplates",
+        "AgentDocumentation",
         "workshops",
         "Blog",
     ]
