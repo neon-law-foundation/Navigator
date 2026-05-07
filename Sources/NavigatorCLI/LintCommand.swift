@@ -18,62 +18,7 @@ struct LintCommand: Command {
             throw CommandError.invalidPath(path)
         }
 
-        let validCodes = Set(Seeds.questions.map(\.code))
-
-        let engine = RuleEngine(rules: [
-            S101_LineLength(),
-            F101_TitleRequired(),
-            F102_RespondentTypeRequired(),
-            F103_PascalCaseFilename(),
-            F104_FlowQuestionCodes(validCodes: validCodes),
-            F105_ConfidentialRequired(),
-            F106_StaffReviewRequired(),
-            M001_HeadingIncrement(),
-            M003_HeadingStyle(),
-            M004_ULStyle(),
-            M005_ListIndent(),
-            M007_ULIndent(),
-            M009_NoTrailingSpaces(),
-            M010_NoHardTabs(),
-            M011_NoReversedLinks(),
-            M012_NoMultipleBlanks(),
-            M018_NoMissingSpaceATX(),
-            M019_NoMultipleSpaceATX(),
-            M020_NoMissingSpaceClosedATX(),
-            M021_NoMultipleSpaceClosedATX(),
-            M022_BlanksAroundHeadings(),
-            M023_HeadingStartLeft(),
-            M024_NoDuplicateHeading(),
-            M026_NoTrailingPunctuation(),
-            M027_NoMultipleSpaceBlockquote(),
-            M028_NoBlanksBlockquote(),
-            M029_OLPrefix(),
-            M030_ListMarkerSpace(),
-            M031_BlanksAroundFences(),
-            M032_BlanksAroundLists(),
-            M034_NoBareURLs(),
-            M035_HRStyle(),
-            M037_NoSpaceInEmphasis(),
-            M038_NoSpaceInCode(),
-            M039_NoSpaceInLinks(),
-            M040_FencedCodeLanguage(),
-            M042_NoEmptyLinks(),
-            M045_NoAltText(),
-            M046_CodeBlockStyle(),
-            M047_SingleTrailingNewline(),
-            M048_CodeFenceStyle(),
-            M049_EmphasisStyle(),
-            M050_StrongStyle(),
-            M051_LinkFragments(),
-            M052_ReferenceLinksImages(),
-            M053_LinkImageReferenceDefinitions(),
-            M054_LinkImageStyle(),
-            M055_TablePipeStyle(),
-            M056_TableColumnCount(),
-            M058_BlanksAroundTables(),
-            M059_DescriptiveLinkText(),
-            M060_TableColumnStyle(),
-        ])
+        let engine = RuleEngine(rules: NavigatorDefaultRules.all())
 
         let result = try isDirectory.boolValue ? engine.lint(directory: url) : engine.lint(file: url)
 

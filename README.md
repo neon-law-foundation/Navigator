@@ -251,7 +251,30 @@ Lightweight validation rules library with zero external dependencies.
   - `FixableRule` protocol - Rules that can auto-fix violations
   - `Violation` types - Structured error reporting
   - `FrontmatterParser` - YAML frontmatter parsing utility
-  - Rule implementations (F101, F102, S101)
+  - Rule implementations (F101, F102, S101, M001–M060)
+  - `RuleEngine` - Orchestrates rule execution across files
+  - `FileFilters` - Markdown file inclusion/exclusion gate
+  - `NavigatorDefaultRules.all()` - Canonical rule set factory
+
+#### Extending Navigator's rules
+
+Downstream Swift CLIs that want to layer additional rules onto
+Navigator's defaults can depend on `NavigatorRules` directly and use
+the `NavigatorDefaultRules.all()` factory plus the `RuleEngine` and
+`FileFilters` types — no boilerplate copying required:
+
+```swift
+import NavigatorRules
+
+let rules = NavigatorDefaultRules.all() + [C001_NoEmoji(), C002_RequireAuthor()]
+let engine = RuleEngine(rules: rules)
+let result = try engine.lint(directory: url)
+```
+
+This is the seam that powers the Compass extension. Custom rules
+implement the `Rule` (or `FixableRule`) protocol and can reuse the
+parsing utilities (`FrontmatterParser`, `BlockTokenizer`, `LineScanner`,
+etc.) already published by `NavigatorRules`.
 
 ### NavigatorDAL
 
