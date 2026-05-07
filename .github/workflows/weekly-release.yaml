@@ -1,15 +1,15 @@
 ---
-name: Daily Release
+name: Weekly Release
 
 on:
   schedule:
-    # Run every day at 2 AM UTC
-    - cron: "0 2 * * *"
+    # Run every Sunday at 2 AM UTC
+    - cron: "0 2 * * 0"
   workflow_dispatch:
     # Allow manual triggering
 
 concurrency:
-  group: daily-release
+  group: weekly-release
   cancel-in-progress: false
 
 env:
@@ -26,7 +26,7 @@ jobs:
       - name: Generate version
         id: version
         run: |
-          VERSION=$(date +"%y.%m.%d")
+          VERSION=$(date +"%Y.%m.%d")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Generated version: $VERSION"
 
@@ -128,7 +128,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           gh release create "v$VERSION" \
             --title "Navigator CLI v$VERSION" \
-            --notes "Daily automated release for $(date +%Y-%m-%d).
+            --notes "Weekly automated release for $(date +%Y-%m-%d).
 
           ## Installation
 
