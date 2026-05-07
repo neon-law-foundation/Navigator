@@ -271,10 +271,14 @@ let engine = RuleEngine(rules: rules)
 let result = try engine.lint(directory: url)
 ```
 
-This is the seam that powers the Compass extension. Custom rules
-implement the `Rule` (or `FixableRule`) protocol and can reuse the
-parsing utilities (`FrontmatterParser`, `BlockTokenizer`, `LineScanner`,
-etc.) already published by `NavigatorRules`.
+[Compass](https://github.com/neon-law-foundation/Compass) is the
+reference downstream of this seam: it depends on `NavigatorRules`,
+exposes `CompassDefaultRules.all()` as a strict superset of
+`NavigatorDefaultRules.all()`, and ships the `compass` CLI for
+Foundation-specific rules (e.g., `C001_RequireCompassFooter`). Custom
+rules implement the `Rule` (or `FixableRule`) protocol and can reuse
+the parsing utilities (`FrontmatterParser`, `BlockTokenizer`,
+`LineScanner`, etc.) already published by `NavigatorRules`.
 
 ### NavigatorDAL
 
