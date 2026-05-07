@@ -1,5 +1,4 @@
 import Foundation
-import NavigatorRules
 
 /// Orchestrates rule execution across files
 public struct RuleEngine {

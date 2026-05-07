@@ -1,7 +1,6 @@
 import Foundation
+import NavigatorRules
 import Testing
-
-@testable import NavigatorCLI
 
 @Suite("FileFilters")
 struct FileFiltersTests {
