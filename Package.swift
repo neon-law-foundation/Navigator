@@ -163,6 +163,9 @@ let package = Package(
                 .product(name: "SQLKit", package: "sql-kit"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Logging", package: "swift-log"),
+            ],
+            resources: [
+                .copy("AgentDocumentation")
             ]
         ),
         .testTarget(

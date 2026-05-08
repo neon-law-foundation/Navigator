@@ -33,10 +33,18 @@ struct FileFiltersTests {
         #expect(FileFilters.shouldExcludeFromValidation(url("Sources/NavigatorDAL/ERD.md")))
     }
 
-    @Test("Files under ClaudeTemplates/ are excluded")
-    func testClaudeTemplatesExcluded() {
-        #expect(FileFilters.shouldExcludeFromValidation(url("ClaudeTemplates/agents/markdown-formatter.md")))
-        #expect(FileFilters.shouldExcludeFromValidation(url("ClaudeTemplates/commands/format-markdown.md")))
+    @Test("Files under AgentDocumentation/ are excluded")
+    func testAgentDocumentationExcluded() {
+        #expect(
+            FileFilters.shouldExcludeFromValidation(
+                url("Sources/NavigatorCLI/AgentDocumentation/AGENTS.md")
+            )
+        )
+        #expect(
+            FileFilters.shouldExcludeFromValidation(
+                url("Sources/NavigatorCLI/AgentDocumentation/.claude/commands/review.md")
+            )
+        )
     }
 
     @Test("Files under Public/workshops/ are excluded")
@@ -72,6 +80,10 @@ struct FileFiltersTests {
     @Test("shouldValidate returns false for excluded markdown files")
     func testExcludedMarkdownNotValidated() {
         #expect(!FileFilters.shouldValidate(url("README.md")))
-        #expect(!FileFilters.shouldValidate(url("ClaudeTemplates/agents/markdown-formatter.md")))
+        #expect(
+            !FileFilters.shouldValidate(
+                url("Sources/NavigatorCLI/AgentDocumentation/AGENTS.md")
+            )
+        )
     }
 }
