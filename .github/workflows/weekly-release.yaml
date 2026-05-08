@@ -26,7 +26,7 @@ jobs:
       - name: Generate version
         id: version
         run: |
-          VERSION=$(date +"%Y.%m.%d")
+          VERSION=$(date -u +"%Y.%-m.%-d")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Generated version: $VERSION"
 
@@ -36,11 +36,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          if gh release view "v$VERSION" > /dev/null 2>&1; then
-            echo "Release v$VERSION already exists, skipping"
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            echo "Release $VERSION already exists, skipping"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Release v$VERSION does not exist, proceeding"
+            echo "Release $VERSION does not exist, proceeding"
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -126,9 +126,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          gh release create "v$VERSION" \
-            --title "Navigator CLI v$VERSION" \
-            --notes "Weekly automated release for $(date +%Y-%m-%d).
+          gh release create "$VERSION" \
+            --title "Navigator CLI $VERSION" \
+            --notes "Weekly automated release for $(date -u +%Y-%m-%d).
 
           ## Installation
 
@@ -190,11 +190,11 @@ jobs:
 
             on_macos do
               on_arm do
-                url "https://github.com/neon-law-foundation/Navigator/releases/download/v${VERSION}/navigator-${VERSION}-macos-arm64.tar.gz"
+                url "https://github.com/neon-law-foundation/Navigator/releases/download/${VERSION}/navigator-${VERSION}-macos-arm64.tar.gz"
                 sha256 "${ARM64_SHA}"
               end
               on_intel do
-                url "https://github.com/neon-law-foundation/Navigator/releases/download/v${VERSION}/navigator-${VERSION}-macos-x86_64.tar.gz"
+                url "https://github.com/neon-law-foundation/Navigator/releases/download/${VERSION}/navigator-${VERSION}-macos-x86_64.tar.gz"
                 sha256 "${X86_64_SHA}"
               end
             end
@@ -216,5 +216,5 @@ jobs:
           git config user.email "actions@github.com"
           git checkout -B main
           git add Formula/navigator.rb
-          git commit -m "chore: update navigator to v${VERSION}"
+          git commit -m "chore: update navigator to ${VERSION}"
           git push -u origin main

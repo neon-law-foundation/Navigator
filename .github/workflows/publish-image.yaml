@@ -4,7 +4,7 @@ name: Publish container image
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["[0-9]*"]
   workflow_dispatch:
 
 concurrency:

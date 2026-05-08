@@ -26,7 +26,7 @@ jobs:
           account: neon-law-foundation
           token: ${{ secrets.GITHUB_TOKEN }}
           image-names: web
-          image-tags: "!latest !v*"
+          image-tags: "!latest !2*"
           cut-off: 7d
           keep-n-most-recent: 5
           tag-selection: both
