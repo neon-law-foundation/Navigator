@@ -1,4 +1,3 @@
-import Foundation
 // Non-@testable import — if a type, init, or property is not `public`,
 // this file fails to compile and CI breaks. That's the point: this test
 // exists as a compile-time guard on the surface area downstream web
@@ -29,15 +28,12 @@ struct PublicSurfaceTests {
         let summary = BlogPostSummary(
             slug: "hello",
             title: "Hello",
-            date: Date(timeIntervalSince1970: 0),
             excerpt: "hi",
-            tags: ["intro"],
             author: "Nick"
         )
         #expect(summary.slug == "hello")
         #expect(summary.title == "Hello")
         #expect(summary.excerpt == "hi")
-        #expect(summary.tags == ["intro"])
         #expect(summary.author == "Nick")
     }
 
@@ -46,9 +42,7 @@ struct PublicSurfaceTests {
         let post = BlogPost(
             slug: "hello",
             title: "Hello",
-            date: Date(timeIntervalSince1970: 0),
             excerpt: "hi",
-            tags: ["intro"],
             author: "Nick",
             body: "body"
         )
@@ -110,9 +104,7 @@ struct PublicSurfaceTests {
         let summary = BlogPostSummary(
             slug: "s",
             title: "t",
-            date: Date(timeIntervalSince1970: 0),
             excerpt: "e",
-            tags: [],
             author: "a"
         )
         _ = BlogPostCard(post: summary, brand: NLFBrand())
@@ -128,9 +120,7 @@ struct PublicSurfaceTests {
         let post = BlogPost(
             slug: "s",
             title: "t",
-            date: Date(timeIntervalSince1970: 0),
             excerpt: "e",
-            tags: [],
             author: "a",
             body: ""
         )
@@ -158,9 +148,7 @@ struct PublicSurfaceTests {
         let post = BlogPost(
             slug: "s",
             title: "t",
-            date: Date(timeIntervalSince1970: 0),
             excerpt: "e",
-            tags: [],
             author: "a",
             body: ""
         )

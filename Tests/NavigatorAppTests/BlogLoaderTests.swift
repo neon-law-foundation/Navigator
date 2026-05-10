@@ -1,19 +1,16 @@
-import Foundation
 import Testing
 
 @testable import NavigatorApp
 
 @Suite("BlogLoader front-matter parser")
 struct BlogLoaderTests {
-    @Test("parses title, slug, author, date, description, and tags from front-matter")
+    @Test("parses title, slug, author, and description from front-matter")
     func parsesCheckedInFixture() throws {
         let raw = """
             ---
             title: "Hello, World"
-            date: "2026-04-17"
             author: "Neon Law Foundation"
             description: "Why the Neon Law Foundation is starting a blog."
-            tags: ["announcements"]
             slug: "hello-world"
             ---
 
@@ -25,16 +22,6 @@ struct BlogLoaderTests {
         #expect(post.title == "Hello, World")
         #expect(post.author == "Neon Law Foundation")
         #expect(post.description == "Why the Neon Law Foundation is starting a blog.")
-        #expect(post.tags == ["announcements"])
-
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        let expectedDate = formatter.date(from: "2026-04-17")
-        #expect(post.date == expectedDate)
-
         #expect(post.body.contains("Welcome to the Neon Law Foundation blog."))
     }
 
@@ -43,7 +30,6 @@ struct BlogLoaderTests {
         let raw = """
             ---
             title: "Untitled"
-            date: "2026-01-01"
             ---
 
             Body.
@@ -53,21 +39,19 @@ struct BlogLoaderTests {
         #expect(post.slug == "my-file")
     }
 
-    @Test("parses list values with multiple tags")
-    func parsesMultipleTags() throws {
+    @Test("treats omitted author as empty so anonymous posts render bare")
+    func treatsOmittedAuthorAsEmpty() throws {
         let raw = """
             ---
-            title: "Multi"
-            date: "2026-02-02"
-            slug: "multi"
-            tags: ["a", "b", "c"]
+            title: "Anonymous"
+            slug: "anon"
             ---
 
             body
             """
 
-        let post = try #require(try BlogLoader.parse(raw: raw, fallbackSlug: "multi"))
-        #expect(post.tags == ["a", "b", "c"])
+        let post = try #require(try BlogLoader.parse(raw: raw, fallbackSlug: "anon"))
+        #expect(post.author == "")
     }
 
     @Test("returns nil for content without front-matter")
@@ -82,6 +66,15 @@ struct BlogLoaderTests {
         let posts = try BlogLoader.loadAll()
         let hello = try #require(posts.first(where: { $0.slug == "hello-world" }))
         #expect(hello.title == "Hello, World")
-        #expect(hello.tags.contains("announcements"))
+    }
+
+    @Test("loadAll returns posts sorted alphabetically by title (case-insensitive)")
+    func loadAllSortsAlphabetically() throws {
+        let posts = try BlogLoader.loadAll()
+        let titles = posts.map(\.title)
+        let sorted = titles.sorted(by: {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        })
+        #expect(titles == sorted)
     }
 }

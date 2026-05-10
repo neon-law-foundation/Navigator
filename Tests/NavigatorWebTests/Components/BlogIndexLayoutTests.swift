@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import NavigatorWeb
@@ -9,9 +8,7 @@ struct BlogIndexLayoutTests {
         BlogPostSummary(
             slug: slug,
             title: title,
-            date: Date(timeIntervalSince1970: 1_735_689_600),
             excerpt: "\(title) excerpt.",
-            tags: ["tag"],
             author: "Nick Shook"
         )
     }
@@ -59,5 +56,32 @@ struct BlogIndexLayoutTests {
         #expect(html.contains(#"href="/logout""#))
         // Empty-state still rendered by inner BlogPostList.
         #expect(html.contains("No posts yet."))
+    }
+
+    @Test("preserves caller-supplied title order in the rendered grid")
+    func preservesAlphabeticalOrder() {
+        let posts = [
+            fixturePost(slug: "alpha", title: "Alpha"),
+            fixturePost(slug: "beta", title: "Beta"),
+            fixturePost(slug: "gamma", title: "Gamma"),
+        ]
+        let html = BlogIndexLayout(
+            posts: posts,
+            current: 1,
+            total: 1,
+            brand: NLFBrand(),
+            authUser: nil
+        ).render()
+
+        guard
+            let alpha = html.range(of: "Alpha"),
+            let beta = html.range(of: "Beta"),
+            let gamma = html.range(of: "Gamma")
+        else {
+            Issue.record("expected all three titles in the rendered layout")
+            return
+        }
+        #expect(alpha.lowerBound < beta.lowerBound)
+        #expect(beta.lowerBound < gamma.lowerBound)
     }
 }

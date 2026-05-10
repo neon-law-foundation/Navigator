@@ -1,9 +1,7 @@
 ---
 title: "Hello, World"
-date: "2026-04-17"
 author: "Neon Law Foundation"
 description: "Why the Neon Law Foundation is starting a blog, and what to expect from it."
-tags: ["announcements"]
 slug: "hello-world"
 ---
 

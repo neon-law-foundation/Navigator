@@ -60,7 +60,7 @@ struct FileFiltersTests {
         #expect(FileFilters.shouldExcludeFromValidation(url("Sources/NavigatorApp/Content/Blog/hello-world.md")))
         #expect(
             FileFilters.shouldExcludeFromValidation(
-                url("Sources/NavigatorApp/Content/Blog/harness-is-now-navigator.md")
+                url("Sources/NavigatorApp/Content/Blog/navigator-at-a-glance.md")
             )
         )
     }

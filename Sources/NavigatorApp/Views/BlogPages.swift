@@ -1,5 +1,4 @@
 import Elementary
-import Foundation
 import NavigatorWeb
 
 /// The `/blog` index page.
@@ -16,7 +15,8 @@ struct BlogIndexPage: HTML {
             pageTitle: "Blog",
             pageDescription:
                 "Updates, notes, and learnings from the Neon Law Foundation's work on access to justice.",
-            brand: brand
+            brand: brand,
+            canonicalPath: "/blog"
         ) {
             main(.class("max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16")) {
                 h1(.class("text-4xl font-bold text-gray-900 mb-4")) { "Blog" }
@@ -38,34 +38,19 @@ struct BlogPostPage: HTML {
     let brand: any Brand
     let post: BlogPost
 
-    private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d, yyyy"
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        return formatter.string(from: post.date)
-    }
-
     var body: some HTML {
         PageLayout(
             pageTitle: post.title,
             pageDescription: post.description,
-            brand: brand
+            brand: brand,
+            ogType: "article",
+            canonicalPath: "/blog/\(post.slug)"
         ) {
             main(.class("max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16")) {
                 article {
-                    div(.class("flex flex-wrap gap-2 mb-4")) {
-                        for tag in post.tags {
-                            span(
-                                .class("text-xs font-medium px-2 py-1 rounded"),
-                                .style(
-                                    "color:\(brand.primaryColor);background-color:\(brand.primaryColor)14"
-                                )
-                            ) { tag }
-                        }
-                    }
                     h1(.class("text-4xl font-bold text-gray-900 mb-3")) { post.title }
-                    p(.class("text-sm text-gray-500 mb-8")) {
-                        "\(formattedDate) \u{00B7} \(post.author)"
+                    if !post.author.isEmpty {
+                        p(.class("text-sm text-gray-500 mb-8")) { post.author }
                     }
                     div(.class("prose prose-gray max-w-none")) {
                         HTMLRaw(renderMarkdown(post.body))
@@ -90,9 +75,7 @@ extension BlogPost {
         BlogPostSummary(
             slug: slug,
             title: title,
-            date: date,
             excerpt: description,
-            tags: tags,
             author: author
         )
     }
