@@ -3,6 +3,21 @@ import NavigatorRules
 
 struct LintCommand: Command {
     let path: String
+    let markdownOnly: Bool
+    let noDefaultExcludes: Bool
+    let fix: Bool
+
+    init(
+        path: String,
+        markdownOnly: Bool = false,
+        noDefaultExcludes: Bool = false,
+        fix: Bool = false
+    ) {
+        self.path = path
+        self.markdownOnly = markdownOnly
+        self.noDefaultExcludes = noDefaultExcludes
+        self.fix = fix
+    }
 
     func run() async throws {
         let url: URL
@@ -18,7 +33,38 @@ struct LintCommand: Command {
             throw CommandError.invalidPath(path)
         }
 
-        let engine = RuleEngine(rules: NavigatorDefaultRules.all())
+        let rules = markdownOnly ? NavigatorDefaultRules.markdownOnly() : NavigatorDefaultRules.all()
+        let excludedFilenames: Set<String> =
+            noDefaultExcludes ? [] : FileFilters.defaultExcludedFilenames
+        let excludedDirectories: Set<String> =
+            noDefaultExcludes ? [] : FileFilters.defaultExcludedDirectories
+
+        let engine = RuleEngine(
+            rules: rules,
+            excludedFilenames: excludedFilenames,
+            excludedDirectories: excludedDirectories
+        )
+
+        if fix {
+            let fixResult: FixResult
+            if isDirectory.boolValue {
+                fixResult = try await engine.fix(directory: url)
+            } else {
+                fixResult = try await engine.fix(file: url)
+            }
+
+            print(
+                "✓ Fixed \(fixResult.violationsFixed) violation(s) in "
+                    + "\(fixResult.filesFixed.count) file(s)"
+            )
+
+            if !fixResult.filesFixed.isEmpty {
+                for file in fixResult.filesFixed.sorted(by: { $0.path < $1.path }) {
+                    print("  \(makeRelativePath(file, from: url))")
+                }
+            }
+            return
+        }
 
         let result = try isDirectory.boolValue ? engine.lint(directory: url) : engine.lint(file: url)
 

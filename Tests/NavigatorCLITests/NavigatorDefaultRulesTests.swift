@@ -123,6 +123,50 @@ struct NavigatorDefaultRulesTests {
             .filter { $0.ruleCode == "X001" }
         #expect(bannedViolations.count == 1)
     }
+
+    @Test("markdownOnly() drops every F-rule")
+    func testMarkdownOnlyHasNoFRules() {
+        let codes = NavigatorDefaultRules.markdownOnly().map(\.code)
+        #expect(!codes.isEmpty)
+        for code in codes {
+            #expect(!code.hasPrefix("F"))
+        }
+    }
+
+    @Test("markdownOnly() keeps S101 and the M-family in canonical order")
+    func testMarkdownOnlyOrder() {
+        let allCodes = NavigatorDefaultRules.all().map(\.code)
+        let expected = allCodes.filter { !$0.hasPrefix("F") }
+        let actual = NavigatorDefaultRules.markdownOnly().map(\.code)
+        #expect(actual == expected)
+    }
+
+    @Test("markdownOnly() does not flag a plain README without notation frontmatter")
+    func testMarkdownOnlySkipsFRuleViolations() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MarkdownOnly-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: tempDir,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        // A plain README — no frontmatter, no PascalCase filename. The full
+        // rule set would fire several F-rules; markdownOnly() must not.
+        let file = tempDir.appendingPathComponent("readme-style.md")
+        try "# Hello\n\nWelcome.\n".write(to: file, atomically: true, encoding: .utf8)
+
+        let engine = RuleEngine(
+            rules: NavigatorDefaultRules.markdownOnly(),
+            excludedFilenames: [],
+            excludedDirectories: []
+        )
+        let result = try engine.lint(file: file)
+        let codes = result.fileViolations.flatMap(\.violations).map(\.ruleCode)
+        for code in codes {
+            #expect(!code.hasPrefix("F"))
+        }
+    }
 }
 
 /// Minimal downstream rule used to verify that a custom `Rule`
