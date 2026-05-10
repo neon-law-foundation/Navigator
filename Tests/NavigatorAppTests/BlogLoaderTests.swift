@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import App
+@testable import NavigatorApp
 
 @Suite("BlogLoader front-matter parser")
 struct BlogLoaderTests {

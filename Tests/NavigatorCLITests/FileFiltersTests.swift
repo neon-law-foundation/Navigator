@@ -55,10 +55,14 @@ struct FileFiltersTests {
         )
     }
 
-    @Test("Files under Sources/App/Content/Blog/ are excluded")
+    @Test("Files under Sources/NavigatorApp/Content/Blog/ are excluded")
     func testBlogExcluded() {
-        #expect(FileFilters.shouldExcludeFromValidation(url("Sources/App/Content/Blog/hello-world.md")))
-        #expect(FileFilters.shouldExcludeFromValidation(url("Sources/App/Content/Blog/harness-is-now-navigator.md")))
+        #expect(FileFilters.shouldExcludeFromValidation(url("Sources/NavigatorApp/Content/Blog/hello-world.md")))
+        #expect(
+            FileFilters.shouldExcludeFromValidation(
+                url("Sources/NavigatorApp/Content/Blog/harness-is-now-navigator.md")
+            )
+        )
     }
 
     @Test("Regular markdown files are not excluded")

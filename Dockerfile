@@ -11,11 +11,11 @@ RUN swift package resolve
 
 COPY Sources ./Sources
 COPY Plugins ./Plugins
-# SPM validates every declared testTarget path even for `--product App`.
+# SPM validates every declared testTarget path even for `--product NavigatorApp`.
 COPY Tests ./Tests
 
-RUN swift build -c release --static-swift-stdlib --product App \
-    && strip --strip-unneeded .build/release/App
+RUN swift build -c release --static-swift-stdlib --product NavigatorApp \
+    && strip --strip-unneeded .build/release/NavigatorApp
 
 # Stage 2 — distroless runtime. `cc-debian13:nonroot` ships glibc 2.41 +
 # libstdc++ + CA roots; bookworm (debian12) does not carry the GLIBCXX
@@ -25,10 +25,10 @@ FROM gcr.io/distroless/cc-debian13:nonroot AS runtime
 WORKDIR /app
 
 COPY --chown=nonroot:nonroot Public ./Public
-COPY --from=builder --chown=nonroot:nonroot /build/.build/release/App ./App
-COPY --from=builder --chown=nonroot:nonroot /build/.build/release/Navigator_App.resources ./Navigator_App.resources
+COPY --from=builder --chown=nonroot:nonroot /build/.build/release/NavigatorApp ./NavigatorApp
+COPY --from=builder --chown=nonroot:nonroot /build/.build/release/Navigator_NavigatorApp.resources ./Navigator_NavigatorApp.resources
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/App"]
+ENTRYPOINT ["/app/NavigatorApp"]
 CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]

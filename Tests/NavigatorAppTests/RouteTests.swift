@@ -2,7 +2,7 @@ import Testing
 import Vapor
 import VaporTesting
 
-@testable import App
+@testable import NavigatorApp
 
 @Suite("Route smoke tests", .serialized)
 struct RouteTests {

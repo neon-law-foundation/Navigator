@@ -16,7 +16,7 @@ let package = Package(
         .library(name: "NavigatorOIDCMiddleware", targets: ["NavigatorOIDCMiddleware"]),
         .library(name: "NavigatorDatabaseService", targets: ["NavigatorDatabaseService"]),
         .library(name: "NavigatorWeb", targets: ["NavigatorWeb"]),
-        .executable(name: "App", targets: ["App"]),
+        .executable(name: "NavigatorApp", targets: ["NavigatorApp"]),
     ],
     dependencies: [
         .package(url: "https://github.com/vapor/fluent-kit.git", from: "1.52.2"),
@@ -141,7 +141,7 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "App",
+            name: "NavigatorApp",
             dependencies: [
                 "NavigatorWeb",
                 .product(name: "Vapor", package: "vapor"),
@@ -210,9 +210,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "AppTests",
+            name: "NavigatorAppTests",
             dependencies: [
-                "App",
+                "NavigatorApp",
                 .product(name: "VaporTesting", package: "vapor"),
             ]
         ),

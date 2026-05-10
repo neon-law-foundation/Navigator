@@ -15,11 +15,12 @@ This repository ships two things side by side:
    plus the `navigator` command-line tool. These are the reusable
    pieces other projects depend on to lint markdown notations, seed
    databases, walk questionnaires, and render shared UI.
-2. **The `neonlaw.org` website** — the `App` executable target at
-   `Sources/App/`, which serves the public Neon Law Foundation site
-   (home, blog, workshops, about, contact, privacy, terms). It is a
-   Vapor app that renders every page through `NavigatorWeb` components
-   and is packaged as a container image for deployment.
+2. **The `neonlaw.org` website** — the `NavigatorApp` executable target
+   at `Sources/NavigatorApp/`, which serves the public Neon Law
+   Foundation site (home, blog, workshops, about, contact, privacy,
+   terms). It is a Vapor app that renders every page through
+   `NavigatorWeb` components and is packaged as a container image for
+   deployment.
 
 The two share one Swift package and one test suite so a component
 edit lands with the page that consumes it in a single commit.
@@ -304,11 +305,11 @@ Fluent best practices:
 - Better error messages and type safety
 - Cross-database compatibility (SQLite, PostgreSQL)
 
-### App (the `neonlaw.org` website)
+### NavigatorApp (the `neonlaw.org` website)
 
 The Vapor executable that serves the public Neon Law Foundation site.
 
-- **Location**: `Sources/App/`
+- **Location**: `Sources/NavigatorApp/`
 - **Purpose**: Renders the NLF home, blog, workshop, about, contact,
   privacy, and terms pages; serves static assets from `Public/`.
 - **Dependencies**: Vapor, VaporElementary, Elementary, swift-markdown,
@@ -318,7 +319,7 @@ The Vapor executable that serves the public Neon Law Foundation site.
   - `configure.swift` — port, `FileMiddleware`, blog/workshop loaders.
   - `routes.swift` — every public route.
   - `BlogLoader.swift` / `WorkshopMaterialsLoader.swift` — read
-    `Sources/App/Content/Blog/*.md` and
+    `Sources/NavigatorApp/Content/Blog/*.md` and
     `Public/workshops/claude-code-zodiac/*.md` into memory at startup.
   - `Views/*.swift` — Elementary page components; shared UI pieces
     live in `NavigatorWeb`.
@@ -326,7 +327,7 @@ The Vapor executable that serves the public Neon Law Foundation site.
 Run it locally:
 
 ```bash
-swift run App                # or: make dev
+swift run NavigatorApp       # or: make dev
 ```
 
 The server listens on `http://localhost:3001`.
