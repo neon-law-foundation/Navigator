@@ -90,4 +90,57 @@ struct FileFiltersTests {
             )
         )
     }
+
+    @Test("Empty exclusion lists let README.md through")
+    func testEmptyExclusionsAllowReadme() {
+        #expect(
+            FileFilters.shouldValidate(
+                url("README.md"),
+                excludedFilenames: [],
+                excludedDirectories: []
+            )
+        )
+        #expect(
+            !FileFilters.shouldExcludeFromValidation(
+                url("README.md"),
+                excludedFilenames: [],
+                excludedDirectories: []
+            )
+        )
+    }
+
+    @Test("Empty exclusion lists let directory-excluded files through")
+    func testEmptyExclusionsAllowAgentDocumentation() {
+        #expect(
+            FileFilters.shouldValidate(
+                url("Sources/NavigatorCLI/AgentDocumentation/AGENTS.md"),
+                excludedFilenames: [],
+                excludedDirectories: []
+            )
+        )
+    }
+
+    @Test("Custom filename exclusions still apply")
+    func testCustomFilenameExclusion() {
+        #expect(
+            FileFilters.shouldExcludeFromValidation(
+                url("CHANGELOG.md"),
+                excludedFilenames: ["CHANGELOG.md"],
+                excludedDirectories: []
+            )
+        )
+        #expect(
+            !FileFilters.shouldExcludeFromValidation(
+                url("README.md"),
+                excludedFilenames: ["CHANGELOG.md"],
+                excludedDirectories: []
+            )
+        )
+    }
+
+    @Test("Default filename and directory lists are exposed")
+    func testDefaultListsExposed() {
+        #expect(FileFilters.defaultExcludedFilenames.contains("README.md"))
+        #expect(FileFilters.defaultExcludedDirectories.contains("AgentDocumentation"))
+    }
 }

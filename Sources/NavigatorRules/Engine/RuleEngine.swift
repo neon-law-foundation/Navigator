@@ -3,14 +3,35 @@ import Foundation
 /// Orchestrates rule execution across files
 public struct RuleEngine {
     private let rules: [Rule]
+    private let excludedFilenames: Set<String>
+    private let excludedDirectories: Set<String>
 
+    /// Create an engine that uses the default ``FileFilters`` exclusion lists.
     public init(rules: [Rule]) {
+        self.init(
+            rules: rules,
+            excludedFilenames: FileFilters.defaultExcludedFilenames,
+            excludedDirectories: FileFilters.defaultExcludedDirectories
+        )
+    }
+
+    /// Create an engine with custom file-exclusion lists.
+    ///
+    /// Pass empty sets to disable exclusion entirely (e.g., when an operator
+    /// has explicitly opted out of the default skip list with a CLI flag).
+    public init(
+        rules: [Rule],
+        excludedFilenames: Set<String>,
+        excludedDirectories: Set<String>
+    ) {
         self.rules = rules
+        self.excludedFilenames = excludedFilenames
+        self.excludedDirectories = excludedDirectories
     }
 
     /// Run all rules against a single file
     public func lint(file: URL) throws -> LintResult {
-        guard FileFilters.shouldValidate(file) else {
+        guard shouldValidate(file) else {
             return LintResult(fileViolations: [])
         }
 
@@ -42,7 +63,7 @@ public struct RuleEngine {
         }
 
         for case let fileURL as URL in enumerator {
-            guard FileFilters.shouldValidate(fileURL) else { continue }
+            guard shouldValidate(fileURL) else { continue }
 
             var violations: [Violation] = []
             for rule in rules {
@@ -56,6 +77,28 @@ public struct RuleEngine {
         }
 
         return LintResult(fileViolations: allFileViolations)
+    }
+
+    /// Run auto-fix for all fixable rules against a single file.
+    public func fix(file: URL) async throws -> FixResult {
+        guard shouldValidate(file) else {
+            return FixResult(filesFixed: [], violationsFixed: 0)
+        }
+
+        var filesFixed: Set<URL> = []
+        var totalFixed = 0
+
+        for rule in rules {
+            if let fixable = rule as? FixableRule {
+                let fixed = try await fixable.fix(file: file)
+                if fixed > 0 {
+                    filesFixed.insert(file)
+                    totalFixed += fixed
+                }
+            }
+        }
+
+        return FixResult(filesFixed: Array(filesFixed), violationsFixed: totalFixed)
     }
 
     /// Run auto-fix for all fixable rules
@@ -80,6 +123,14 @@ public struct RuleEngine {
         return FixResult(filesFixed: Array(filesFixed), violationsFixed: totalFixed)
     }
 
+    private func shouldValidate(_ url: URL) -> Bool {
+        FileFilters.shouldValidate(
+            url,
+            excludedFilenames: excludedFilenames,
+            excludedDirectories: excludedDirectories
+        )
+    }
+
     private func collectFiles(in directory: URL) throws -> [URL] {
         let fileManager = FileManager.default
         guard
@@ -94,7 +145,7 @@ public struct RuleEngine {
 
         var files: [URL] = []
         for case let fileURL as URL in enumerator {
-            guard FileFilters.shouldValidate(fileURL) else { continue }
+            guard shouldValidate(fileURL) else { continue }
             files.append(fileURL)
         }
 

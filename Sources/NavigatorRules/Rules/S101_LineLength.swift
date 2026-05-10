@@ -39,43 +39,24 @@ public struct S101_LineLength: FixableRule {
         return violations
     }
 
+    /// Reflows long lines deterministically using ``LineWrapper``.
+    ///
+    /// Returns the count of S101 violations the rewrite eliminated. Lines that
+    /// cannot be safely reflowed (fenced code blocks, tables, link reference
+    /// definitions, headings, HTML, single tokens longer than `maxLength`)
+    /// are left in place and continue to report as violations.
     public func fix(file: URL) async throws -> Int {
-        let violationsBeforeFix = try validate(file: file)
-        let violationCount = violationsBeforeFix.count
+        let before = try validate(file: file).count
+        guard before > 0 else { return 0 }
 
-        guard violationCount > 0 else {
-            return 0
+        let original = try String(contentsOf: file, encoding: .utf8)
+        let wrapped = LineWrapper.wrap(original, maxLength: maxLength)
+
+        if wrapped != original {
+            try wrapped.write(to: file, atomically: true, encoding: .utf8)
         }
 
-        let prompt = """
-            Fix the line length violations in the file at \(file.path).
-
-            All lines in Markdown files must be ≤120 characters. Please:
-
-            1. Break long lines at natural boundaries (spaces, punctuation)
-            2. Keep each line as close to 120 characters as possible without exceeding it
-            3. Maintain readability and proper Markdown formatting
-            4. For long URLs or code, consider using reference-style links
-            5. DO NOT change the meaning or content, only reformat for line length
-
-            Edit the file to fix all line length violations.
-            """
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/claude")
-        process.arguments = ["--dangerously-skip-permissions", "--print", prompt]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        try process.run()
-        process.waitUntilExit()
-
-        guard process.terminationStatus == 0 else {
-            throw ValidationError.fixFailed(file)
-        }
-
-        return violationCount
+        let after = try validate(file: file).count
+        return max(0, before - after)
     }
 }

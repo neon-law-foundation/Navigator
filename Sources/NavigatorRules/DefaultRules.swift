@@ -81,4 +81,65 @@ public enum NavigatorDefaultRules {
             M060_TableColumnStyle(),
         ]
     }
+
+    /// General-purpose Markdown rule subset.
+    ///
+    /// Returns the M-family plus `S101_LineLength` — every rule that does
+    /// not assume a Navigator notation frontmatter. Use this when running
+    /// `navigator lint` against arbitrary Markdown (READMEs, design notes,
+    /// blog posts) so the F-rules do not fire on files that were never
+    /// meant to carry the standard frontmatter.
+    ///
+    /// The order matches ``all(validQuestionCodes:)`` with the F-family
+    /// removed, so violations sort consistently across both rule sets.
+    public static func markdownOnly() -> [Rule] {
+        [
+            S101_LineLength(),
+            M001_HeadingIncrement(),
+            M003_HeadingStyle(),
+            M004_ULStyle(),
+            M005_ListIndent(),
+            M007_ULIndent(),
+            M009_NoTrailingSpaces(),
+            M010_NoHardTabs(),
+            M011_NoReversedLinks(),
+            M012_NoMultipleBlanks(),
+            M018_NoMissingSpaceATX(),
+            M019_NoMultipleSpaceATX(),
+            M020_NoMissingSpaceClosedATX(),
+            M021_NoMultipleSpaceClosedATX(),
+            M022_BlanksAroundHeadings(),
+            M023_HeadingStartLeft(),
+            M024_NoDuplicateHeading(),
+            M026_NoTrailingPunctuation(),
+            M027_NoMultipleSpaceBlockquote(),
+            M028_NoBlanksBlockquote(),
+            M029_OLPrefix(),
+            M030_ListMarkerSpace(),
+            M031_BlanksAroundFences(),
+            M032_BlanksAroundLists(),
+            M034_NoBareURLs(),
+            M035_HRStyle(),
+            M037_NoSpaceInEmphasis(),
+            M038_NoSpaceInCode(),
+            M039_NoSpaceInLinks(),
+            M040_FencedCodeLanguage(),
+            M042_NoEmptyLinks(),
+            M045_NoAltText(),
+            M046_CodeBlockStyle(),
+            M047_SingleTrailingNewline(),
+            M048_CodeFenceStyle(),
+            M049_EmphasisStyle(),
+            M050_StrongStyle(),
+            M051_LinkFragments(),
+            M052_ReferenceLinksImages(),
+            M053_LinkImageReferenceDefinitions(),
+            M054_LinkImageStyle(),
+            M055_TablePipeStyle(),
+            M056_TableColumnCount(),
+            M058_BlanksAroundTables(),
+            M059_DescriptiveLinkText(),
+            M060_TableColumnStyle(),
+        ]
+    }
 }

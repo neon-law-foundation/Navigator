@@ -9,6 +9,12 @@ func printUsage() {
 
         Commands:
           lint <path>         Validate Markdown files — accepts a directory or a single .md file
+                              --markdown-only         Run only the general-purpose Markdown rules
+                                                      (M-family + S101); skip notation F-rules
+                              --no-default-excludes   Lint files normally skipped by name
+                                                      (README.md, CLAUDE.md, etc.)
+                              --fix                   Apply auto-fix for every fixable rule
+                                                      and print a summary of fixes applied
           import <directory>  Import validated Markdown notations to database (macOS only)
                               Auto-detects git repository and commit SHA
                               Requires clean working tree (no uncommitted changes)
@@ -48,6 +54,8 @@ func printUsage() {
         Examples:
           navigator lint .
           navigator lint Sources/NavigatorDAL/Examples/Trusts/nevada.md
+          navigator lint --markdown-only README.md --no-default-excludes
+          navigator lint --fix ./docs
           navigator import ./notations
           navigator pdf nevada.md
           navigator edit nevada.md
@@ -80,8 +88,31 @@ Task {
 
         switch commandName {
         case "lint":
-            let path = arguments.count > 2 ? arguments[2] : "."
-            command = LintCommand(path: path)
+            // Parse flags interleaved with the path argument so callers can
+            // write `navigator lint --markdown-only ./docs` or
+            // `navigator lint ./docs --fix`.
+            var lintPath = "."
+            var markdownOnly = false
+            var noDefaultExcludes = false
+            var fix = false
+            for arg in arguments.dropFirst(2) {
+                switch arg {
+                case "--markdown-only":
+                    markdownOnly = true
+                case "--no-default-excludes":
+                    noDefaultExcludes = true
+                case "--fix":
+                    fix = true
+                default:
+                    lintPath = arg
+                }
+            }
+            command = LintCommand(
+                path: lintPath,
+                markdownOnly: markdownOnly,
+                noDefaultExcludes: noDefaultExcludes,
+                fix: fix
+            )
 
         case "import":
             let directoryPath = arguments.count > 2 ? arguments[2] : "."
