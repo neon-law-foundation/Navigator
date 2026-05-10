@@ -21,6 +21,29 @@ struct BlogTests {
         }
     }
 
+    @Test("GET /blog renders posts in alphabetical order by title")
+    func indexSortsAlphabetically() async throws {
+        let titles = try BlogLoader.loadAll().map(\.title)
+        try await withApp(configure: configure) { app in
+            try await app.testing().test(
+                .GET,
+                "/blog",
+                afterResponse: { res async in
+                    #expect(res.status == .ok)
+                    let body = res.body.string
+                    var cursor = body.startIndex
+                    for title in titles {
+                        guard let range = body.range(of: title, range: cursor..<body.endIndex) else {
+                            Issue.record("title \(title) missing from /blog body")
+                            return
+                        }
+                        cursor = range.upperBound
+                    }
+                }
+            )
+        }
+    }
+
     @Test("GET /blog/hello-world renders the post body")
     func postPageRendersBody() async throws {
         try await withApp(configure: configure) { app in
@@ -30,7 +53,6 @@ struct BlogTests {
                 afterResponse: { res async in
                     #expect(res.status == .ok)
                     #expect(res.body.string.contains("Welcome to the Neon Law Foundation blog"))
-                    #expect(res.body.string.contains("announcements"))
                 }
             )
         }

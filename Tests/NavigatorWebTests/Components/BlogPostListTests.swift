@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import NavigatorWeb
@@ -9,9 +8,7 @@ struct BlogPostListTests {
         BlogPostSummary(
             slug: slug,
             title: title,
-            date: Date(timeIntervalSince1970: 1_735_689_600),
             excerpt: "\(title) excerpt.",
-            tags: ["tag"],
             author: "Nick Shook"
         )
     }
@@ -48,8 +45,30 @@ struct BlogPostListTests {
         ]
         let html = BlogPostList(posts: posts, brand: NeonLawBrand()).render()
 
+        // Each card has at least one occurrence of the brand color in
+        // the title link's inline style.
         let occurrences = html.components(separatedBy: "color:#7c3aed").count - 1
-        // 2 cards × (1 title link color + 1 style attr color mention per tag chip × 1 tag) = 4.
-        #expect(occurrences >= 4)
+        #expect(occurrences >= 2)
+    }
+
+    @Test("renders posts in the order supplied (caller is responsible for sort)")
+    func rendersInSuppliedOrder() {
+        let posts = [
+            fixturePost(slug: "alpha", title: "Alpha"),
+            fixturePost(slug: "beta", title: "Beta"),
+            fixturePost(slug: "gamma", title: "Gamma"),
+        ]
+        let html = BlogPostList(posts: posts, brand: NLFBrand()).render()
+
+        guard
+            let alpha = html.range(of: "Alpha"),
+            let beta = html.range(of: "Beta"),
+            let gamma = html.range(of: "Gamma")
+        else {
+            Issue.record("expected all three titles in the rendered list")
+            return
+        }
+        #expect(alpha.lowerBound < beta.lowerBound)
+        #expect(beta.lowerBound < gamma.lowerBound)
     }
 }

@@ -8,27 +8,21 @@ import Foundation
 public struct BlogPost: Sendable, Equatable {
     public let slug: String
     public let title: String
-    public let date: Date
     public let description: String
     public let author: String
-    public let tags: [String]
     public let body: String
 
     public init(
         slug: String,
         title: String,
-        date: Date,
         description: String,
         author: String,
-        tags: [String],
         body: String
     ) {
         self.slug = slug
         self.title = title
-        self.date = date
         self.description = description
         self.author = author
-        self.tags = tags
         self.body = body
     }
 }
@@ -38,12 +32,11 @@ public struct BlogPost: Sendable, Equatable {
 ///
 /// We use a tiny, purpose-built YAML front-matter parser rather than pulling
 /// in a full YAML dependency — the blog front-matter schema is fixed and
-/// extremely narrow (scalar strings plus one list for `tags`). Adding `Yams`
-/// would let us handle arbitrary YAML but the additional surface area is not
-/// worth it for six keys.
+/// extremely narrow (scalar strings only).
 public enum BlogLoader {
     /// Loads every `*.md` in the bundled blog content directory, parses
-    /// front-matter, and returns posts sorted newest-first.
+    /// front-matter, and returns posts sorted alphabetically by title
+    /// (case-insensitive).
     public static func loadAll(bundle: Bundle? = nil) throws -> [BlogPost] {
         let chosenBundle = bundle ?? Bundle.module
         let contentURL = chosenBundle.bundleURL.appendingPathComponent(
@@ -67,7 +60,9 @@ public enum BlogLoader {
                 posts.append(post)
             }
         }
-        return posts.sorted(by: { $0.date > $1.date })
+        return posts.sorted(by: {
+            $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+        })
     }
 
     /// Parses a single markdown file with YAML front-matter.
@@ -76,10 +71,8 @@ public enum BlogLoader {
     /// ```
     /// ---
     /// title: "..."
-    /// date: "YYYY-MM-DD"
     /// author: "..."
     /// description: "..."
-    /// tags: ["a", "b"]
     /// slug: "..."
     /// ---
     ///
@@ -106,25 +99,19 @@ public enum BlogLoader {
         let slug = values["slug"] ?? fallbackSlug
         let description = values["description"] ?? ""
         let author = values["author"] ?? ""
-        let dateString = values["date"] ?? ""
-        let date = Self.parseDate(dateString) ?? Date(timeIntervalSince1970: 0)
-        let tags = parseList(values["tags"] ?? "")
 
         return BlogPost(
             slug: slug,
             title: title,
-            date: date,
             description: description,
             author: author,
-            tags: tags,
             body: body
         )
     }
 
     /// Minimal front-matter parser: scans line-by-line, splits on the first
     /// `:`, strips surrounding whitespace and at most one layer of matching
-    /// quotes from values. List values (e.g. `tags`) are preserved as the
-    /// raw right-hand side; `parseList` handles them.
+    /// quotes from values.
     static func parseFrontMatter(_ source: String) -> [String: String] {
         var out: [String: String] = [:]
         for line in source.split(separator: "\n", omittingEmptySubsequences: true) {
@@ -137,22 +124,6 @@ public enum BlogLoader {
         return out
     }
 
-    /// Parses a YAML flow-style list like `["a", "b"]` or a single bare
-    /// string. Returns an empty list for empty input.
-    static func parseList(_ raw: String) -> [String] {
-        let s = raw.trimmingCharacters(in: .whitespaces)
-        guard !s.isEmpty else { return [] }
-        if s.hasPrefix("[") && s.hasSuffix("]") {
-            let inner = s.dropFirst().dropLast()
-            return
-                inner
-                .split(separator: ",")
-                .map { unwrap($0.trimmingCharacters(in: .whitespaces)) }
-                .filter { !$0.isEmpty }
-        }
-        return [unwrap(s)]
-    }
-
     /// Removes a single outer layer of matching `"..."` or `'...'` quotes.
     static func unwrap(_ s: String) -> String {
         guard s.count >= 2 else { return s }
@@ -162,14 +133,5 @@ public enum BlogLoader {
             return String(s.dropFirst().dropLast())
         }
         return s
-    }
-
-    static func parseDate(_ raw: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: raw)
     }
 }

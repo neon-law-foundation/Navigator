@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import NavigatorWeb
@@ -9,9 +8,7 @@ struct BlogPostLayoutTests {
         BlogPost(
             slug: "hello-world",
             title: "Hello, world",
-            date: Date(timeIntervalSince1970: 1_735_689_600),
             excerpt: "A first post.",
-            tags: ["intro"],
             author: "Nick Shook",
             body: body
         )
