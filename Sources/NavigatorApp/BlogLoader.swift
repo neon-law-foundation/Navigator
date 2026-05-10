@@ -34,7 +34,7 @@ public struct BlogPost: Sendable, Equatable {
 }
 
 /// Parses the Markdown blog posts bundled as a resource under
-/// `Sources/App/Content/Blog`.
+/// `Sources/NavigatorApp/Content/Blog`.
 ///
 /// We use a tiny, purpose-built YAML front-matter parser rather than pulling
 /// in a full YAML dependency — the blog front-matter schema is fixed and

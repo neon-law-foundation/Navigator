@@ -2,7 +2,7 @@
 
 # Run the `neonlaw.org` website locally on port 3001.
 dev:
-	swift run App
+	swift run NavigatorApp
 
 # Compile every product in the package.
 build:
