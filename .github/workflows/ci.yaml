@@ -72,5 +72,14 @@ jobs:
             exit "${lint_exit}"
           fi
 
+      - name: Lint repo Markdown with navigator (general-purpose subset)
+        if: runner.os == 'macOS'
+        # Dogfood the binary against this repository's own Markdown using the
+        # M-family + S101 subset. Default exclusions in FileFilters skip
+        # README.md, CLAUDE.md, ERD.md, AgentDocumentation/, Blog/, and
+        # workshops/ — files that intentionally do not follow the standard
+        # rule set. Any non-zero exit fails the job.
+        run: .build/release/NavigatorCLI lint --markdown-only .
+
       - name: Run tests
         run: swift test
