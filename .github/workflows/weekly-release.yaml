@@ -16,10 +16,12 @@ env:
   SWIFT_VERSION: "6.3.1"
 
 jobs:
-  build-and-release:
-    runs-on: macos-26
-    timeout-minutes: 30
-
+  generate-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      exists: ${{ steps.check_release.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,15 +46,74 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+  build-linux:
+    needs: generate-version
+    if: needs.generate-version.outputs.exists == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Install Swift toolchain
-        if: steps.check_release.outputs.exists == 'false'
         # Using SwiftyLab/setup-swift — see ci.yaml for rationale.
         uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: ${{ env.SWIFT_VERSION }}
 
       - name: Cache Swift Package Manager dependencies
-        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.cache/org.swift.swiftpm
+          key: spm-linux-release-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            spm-linux-release-
+
+      - name: Build for Linux (x86_64, static stdlib)
+        run: |
+          swift build -c release \
+            --product NavigatorCLI \
+            --static-swift-stdlib
+          mkdir -p dist/linux-x86_64
+          cp .build/release/NavigatorCLI dist/linux-x86_64/navigator
+
+      - name: Verify binary
+        run: |
+          file dist/linux-x86_64/navigator
+          dist/linux-x86_64/navigator --help
+
+      - name: Package binary
+        run: |
+          VERSION="${{ needs.generate-version.outputs.version }}"
+          mkdir -p release
+          tar -czf "release/navigator-${VERSION}-linux-x86_64.tar.gz" \
+            -C dist/linux-x86_64 navigator
+
+      - name: Upload Linux tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-linux-x86_64
+          path: release/navigator-*-linux-x86_64.tar.gz
+          retention-days: 1
+
+  build-and-release:
+    needs: [generate-version, build-linux]
+    if: needs.generate-version.outputs.exists == 'false'
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift toolchain
+        # Using SwiftyLab/setup-swift — see ci.yaml for rationale.
+        uses: SwiftyLab/setup-swift@v1.14.0
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+
+      - name: Cache Swift Package Manager dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -63,21 +124,18 @@ jobs:
             spm-macos-release-
 
       - name: Build for Apple Silicon (arm64)
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           swift build -c release --product NavigatorCLI --arch arm64
           mkdir -p dist/arm64
           cp .build/arm64-apple-macosx/release/NavigatorCLI dist/arm64/navigator
 
       - name: Build for Intel (x86_64)
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           swift build -c release --product NavigatorCLI --arch x86_64
           mkdir -p dist/x86_64
           cp .build/x86_64-apple-macosx/release/NavigatorCLI dist/x86_64/navigator
 
       - name: Create universal binary
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           mkdir -p dist/universal
           lipo -create \
@@ -87,7 +145,6 @@ jobs:
           lipo -info dist/universal/navigator
 
       - name: Verify binaries
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           echo "Verifying arm64 binary..."
           file dist/arm64/navigator
@@ -100,10 +157,9 @@ jobs:
           file dist/universal/navigator
           dist/universal/navigator --help
 
-      - name: Package binaries
-        if: steps.check_release.outputs.exists == 'false'
+      - name: Package macOS binaries
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.generate-version.outputs.version }}"
           mkdir -p release
 
           tar -czf "release/navigator-${VERSION}-macos-arm64.tar.gz" \
@@ -115,34 +171,48 @@ jobs:
           tar -czf "release/navigator-${VERSION}-macos-universal.tar.gz" \
             -C dist/universal navigator
 
+      - name: Download Linux tarball artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: navigator-linux-x86_64
+          path: release
+
+      - name: Compute checksums
+        run: |
           cd release
           shasum -a 256 *.tar.gz > checksums.txt
           cat checksums.txt
 
       - name: Create GitHub Release
-        if: steps.check_release.outputs.exists == 'false'
         id: create_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.generate-version.outputs.version }}"
           gh release create "$VERSION" \
             --title "Navigator CLI $VERSION" \
             --notes "Weekly automated release for $(date -u +%Y-%m-%d).
 
           ## Installation
 
-          ### Homebrew (Recommended)
+          ### Homebrew (Recommended, macOS)
           \`\`\`bash
           brew tap neon-law-foundation/tap
           brew install navigator
           \`\`\`
 
+          ### Linux
+          \`\`\`bash
+          curl -L \"https://github.com/neon-law-foundation/Navigator/releases/download/${VERSION}/navigator-${VERSION}-linux-x86_64.tar.gz\" \\
+            | sudo tar -xzC /usr/local/bin/
+          \`\`\`
+
           ### Manual Download
           Download the appropriate binary for your system:
           - **Apple Silicon (M1/M2/M3)**: \`navigator-${VERSION}-macos-arm64.tar.gz\`
-          - **Intel**: \`navigator-${VERSION}-macos-x86_64.tar.gz\`
-          - **Universal**: \`navigator-${VERSION}-macos-universal.tar.gz\`
+          - **Intel macOS**: \`navigator-${VERSION}-macos-x86_64.tar.gz\`
+          - **Universal macOS**: \`navigator-${VERSION}-macos-universal.tar.gz\`
+          - **Linux x86_64 (static)**: \`navigator-${VERSION}-linux-x86_64.tar.gz\`
 
           Then extract and move to your PATH:
           \`\`\`bash
@@ -154,17 +224,15 @@ jobs:
             release/checksums.txt
 
       - name: Calculate checksums for formula
-        if: steps.check_release.outputs.exists == 'false'
         id: checksums
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.generate-version.outputs.version }}"
           ARM64_SHA=$(shasum -a 256 "release/navigator-${VERSION}-macos-arm64.tar.gz" | awk '{print $1}')
           X86_64_SHA=$(shasum -a 256 "release/navigator-${VERSION}-macos-x86_64.tar.gz" | awk '{print $1}')
           echo "arm64_sha=$ARM64_SHA" >> "$GITHUB_OUTPUT"
           echo "x86_64_sha=$X86_64_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Update Homebrew formula
-        if: steps.check_release.outputs.exists == 'false'
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
@@ -173,7 +241,7 @@ jobs:
             exit 0
           fi
 
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.generate-version.outputs.version }}"
           ARM64_SHA="${{ steps.checksums.outputs.arm64_sha }}"
           X86_64_SHA="${{ steps.checksums.outputs.x86_64_sha }}"
 

@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "NavigatorDatabaseService", targets: ["NavigatorDatabaseService"]),
         .library(name: "NavigatorWeb", targets: ["NavigatorWeb"]),
         .executable(name: "NavigatorApp", targets: ["NavigatorApp"]),
+        .executable(name: "NavigatorCLI", targets: ["NavigatorCLI"]),
     ],
     dependencies: [
         .package(url: "https://github.com/vapor/fluent-kit.git", from: "1.52.2"),
