@@ -4,7 +4,7 @@ name: Prune old container images
 on:
   schedule:
     # Daily at 04:00 UTC — an hour offset from weekly-release.yaml's 02:00
-    # window so a Sunday release never races against a prune run.
+    # window so a Tuesday release never races against a prune run.
     - cron: "0 4 * * *"
   workflow_dispatch:
 

@@ -42,7 +42,7 @@ brew install navigator
 
 The formula in
 [neon-law-foundation/homebrew-tap](https://github.com/neon-law-foundation/homebrew-tap)
-is updated weekly at Sunday 02:00 UTC by `.github/workflows/weekly-release.yaml`,
+is updated weekly at Tuesday 02:00 UTC by `.github/workflows/weekly-release.yaml`,
 which publishes a versioned macOS release for Apple Silicon and Intel and rewrites
 `Formula/navigator.rb` with the new tarball URLs and SHAs.
 
@@ -412,7 +412,7 @@ the entire CLI is blocked until that upstream issue is resolved.
 
 ## Homebrew Distribution
 
-Releases are published weekly at Sunday 02:00 UTC via
+Releases are published weekly at Tuesday 02:00 UTC via
 `.github/workflows/weekly-release.yaml`. The workflow builds arm64, x86_64,
 and universal macOS binaries, creates a GitHub release with checksums, and
 updates `Formula/navigator.rb` in
