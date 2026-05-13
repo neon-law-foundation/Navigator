@@ -19,11 +19,11 @@ public struct M034_NoBareURLs: Rule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
-        let skippedLines = Self.linesInsideCodeOrFrontmatter(content: content)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         for line in LineScanner.scan(content) {
-            if skippedLines.contains(line.number) { continue }
+            if codeLines.contains(line.number) { continue }
             if line.isInFrontmatter { continue }
             for range in Self.bareURLRanges(in: line.raw) {
                 violations.append(
@@ -37,23 +37,6 @@ public struct M034_NoBareURLs: Rule {
             }
         }
         return violations
-    }
-
-    /// Collect every 1-indexed line that sits inside a fenced or indented code block, or
-    /// the top-level frontmatter block, so the line-scan pass can skip them.
-    private static func linesInsideCodeOrFrontmatter(content: String) -> Set<Int> {
-        var skipped: Set<Int> = []
-        for block in BlockTokenizer.tokenize(content) {
-            switch block.kind {
-            case .fencedCode, .indentedCode, .frontmatter:
-                for line in block.startLine...block.endLine {
-                    skipped.insert(line)
-                }
-            default:
-                continue
-            }
-        }
-        return skipped
     }
 
     /// Enumerate string ranges in `line` that look like bare URLs: URL-like substrings that

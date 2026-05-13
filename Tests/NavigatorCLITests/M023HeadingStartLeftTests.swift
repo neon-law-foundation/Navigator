@@ -76,4 +76,71 @@ struct M023HeadingStartLeftTests {
         let rule = M023_HeadingStartLeft()
         #expect(try rule.validate(file: file).isEmpty)
     }
+
+    @Test("Hash-prefixed line inside a fenced code block is not a heading")
+    func testFencedCodeHashLineNotFlagged() throws {
+        let file = try makeFile(
+            content: """
+                # Heading
+
+                ```bash
+                  # A shell comment with leading whitespace
+                echo hello
+                ```
+                """
+        )
+        let rule = M023_HeadingStartLeft()
+        #expect(try rule.validate(file: file).isEmpty)
+    }
+
+    // Reproduces the issue: an indented fenced code block inside a list item
+    // contains a `#`-prefixed line. The previous implementation flagged that
+    // line and `--fix` silently stripped its leading whitespace, corrupting
+    // the source.
+    @Test("fix leaves fenced-code body untouched")
+    func testFixLeavesFenceContentsUntouched() async throws {
+        let original = """
+            # Minimal repro
+
+            1. Some setup step:
+
+               ```bash
+               # A shell comment indented to match the list-item code block
+               echo hello
+               ```
+
+            """
+        let file = try makeFile(content: original)
+        let rule = M023_HeadingStartLeft()
+        let fixed = try await rule.fix(file: file)
+        #expect(fixed == 0)
+        let content = try String(contentsOf: file, encoding: .utf8)
+        #expect(content == original)
+    }
+
+    @Test("Indented heading outside a fence is still fixed")
+    func testIndentedHeadingOutsideFenceStillFixed() async throws {
+        let file = try makeFile(
+            content: """
+                  # Indented heading
+
+                ```bash
+                  # Indented shell comment
+                ```
+                """
+        )
+        let rule = M023_HeadingStartLeft()
+        let fixed = try await rule.fix(file: file)
+        #expect(fixed == 1)
+        let content = try String(contentsOf: file, encoding: .utf8)
+        #expect(
+            content == """
+                # Indented heading
+
+                ```bash
+                  # Indented shell comment
+                ```
+                """
+        )
+    }
 }

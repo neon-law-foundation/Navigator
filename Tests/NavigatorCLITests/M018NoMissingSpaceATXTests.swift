@@ -90,4 +90,23 @@ struct M018NoMissingSpaceATXTests {
         let content = try String(contentsOf: file, encoding: .utf8)
         #expect(content == "# Heading\n## Sub\n")
     }
+
+    @Test("Hash-prefixed lines inside fenced code are not flagged or fixed")
+    func testFencedCodeIgnored() async throws {
+        let original = """
+            # Heading
+
+            ```python
+            #not a heading
+            ```
+
+            """
+        let file = try makeFile(content: original)
+        let rule = M018_NoMissingSpaceATX()
+        #expect(try rule.validate(file: file).isEmpty)
+        let fixed = try await rule.fix(file: file)
+        #expect(fixed == 0)
+        let content = try String(contentsOf: file, encoding: .utf8)
+        #expect(content == original)
+    }
 }

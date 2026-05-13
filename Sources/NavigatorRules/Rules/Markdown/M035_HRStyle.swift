@@ -16,10 +16,12 @@ public struct M035_HRStyle: Rule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         var expectedStyle: String?
         for line in LineScanner.scan(content) where !line.isInFrontmatter {
+            if codeLines.contains(line.number) { continue }
             guard let style = Self.horizontalRuleStyle(of: line.raw) else { continue }
             if let expected = expectedStyle {
                 if style != expected {
