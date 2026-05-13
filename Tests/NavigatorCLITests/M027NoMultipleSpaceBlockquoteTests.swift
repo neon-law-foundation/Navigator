@@ -88,4 +88,19 @@ struct M027NoMultipleSpaceBlockquoteTests {
         let rule = M027_NoMultipleSpaceBlockquote()
         #expect(try rule.validate(file: file).isEmpty)
     }
+
+    @Test("Blockquote-shaped lines inside fenced code are ignored")
+    func testFencedCodeIgnored() throws {
+        let file = try makeFile(
+            content: """
+                # Heading
+
+                ```text
+                >  shell prompt with two spaces
+                ```
+                """
+        )
+        let rule = M027_NoMultipleSpaceBlockquote()
+        #expect(try rule.validate(file: file).isEmpty)
+    }
 }

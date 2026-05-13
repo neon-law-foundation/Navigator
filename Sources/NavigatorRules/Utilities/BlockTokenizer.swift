@@ -59,6 +59,28 @@ public struct Block: Sendable, Equatable {
 /// paragraph, blank, and YAML frontmatter. Not a full CommonMark parser — suitable for the ten
 /// block-level rules ported in Phase 2 of #97.
 public enum BlockTokenizer {
+    /// The 1-indexed line numbers in `content` that sit inside a fenced or indented code block.
+    ///
+    /// Line-scan rules that look for line-start patterns (ATX hashes, blockquote markers,
+    /// horizontal-rule glyphs, etc.) must skip these lines, because the same characters mean
+    /// something else inside a code block — a `#` is a shell comment, a `---` is a docstring
+    /// divider, a `>` is a shell prompt. Flagging or auto-fixing such lines silently corrupts
+    /// the source.
+    public static func linesInsideCodeBlocks(_ content: String) -> Set<Int> {
+        var lines: Set<Int> = []
+        for block in tokenize(content) {
+            switch block.kind {
+            case .fencedCode, .indentedCode:
+                for line in block.startLine...block.endLine {
+                    lines.insert(line)
+                }
+            default:
+                continue
+            }
+        }
+        return lines
+    }
+
     /// Tokenize `content` into blocks. The returned blocks cover every line in order; every
     /// 1-indexed line number appears in exactly one block.
     public static func tokenize(_ content: String) -> [Block] {

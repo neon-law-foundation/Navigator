@@ -64,4 +64,19 @@ struct M021NoMultipleSpaceClosedATXTests {
         let rule = M021_NoMultipleSpaceClosedATX()
         #expect(try rule.validate(file: file).isEmpty)
     }
+
+    @Test("Closed-ATX-shaped lines inside fenced code are ignored")
+    func testFencedCodeIgnored() throws {
+        let file = try makeFile(
+            content: """
+                # Heading
+
+                ```text
+                #  body  #
+                ```
+                """
+        )
+        let rule = M021_NoMultipleSpaceClosedATX()
+        #expect(try rule.validate(file: file).isEmpty)
+    }
 }

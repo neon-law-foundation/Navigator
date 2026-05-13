@@ -15,9 +15,11 @@ public struct M021_NoMultipleSpaceClosedATX: Rule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         for line in LineScanner.scan(content) where !line.isInFrontmatter {
+            if codeLines.contains(line.number) { continue }
             guard let parts = ATXHeadingParser.parseClosed(line.raw) else { continue }
 
             let leadingMultiple = parts.content.hasPrefix("  ")

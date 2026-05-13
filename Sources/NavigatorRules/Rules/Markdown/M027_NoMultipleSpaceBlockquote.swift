@@ -15,9 +15,11 @@ public struct M027_NoMultipleSpaceBlockquote: Rule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         for line in LineScanner.scan(content) where !line.isInFrontmatter {
+            if codeLines.contains(line.number) { continue }
             if Self.hasMultipleSpacesAfterMarker(in: line.raw) {
                 violations.append(
                     Violation(

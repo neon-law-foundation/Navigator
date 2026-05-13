@@ -75,4 +75,23 @@ struct M019NoMultipleSpaceATXTests {
         let rule = M019_NoMultipleSpaceATX()
         #expect(try rule.validate(file: file).isEmpty)
     }
+
+    @Test("Fenced code lines with multiple spaces after `#` are not flagged or fixed")
+    func testFencedCodeIgnored() async throws {
+        let original = """
+            # Heading
+
+            ```python
+            #  shell-style comment with two spaces
+            ```
+
+            """
+        let file = try makeFile(content: original)
+        let rule = M019_NoMultipleSpaceATX()
+        #expect(try rule.validate(file: file).isEmpty)
+        let fixed = try await rule.fix(file: file)
+        #expect(fixed == 0)
+        let content = try String(contentsOf: file, encoding: .utf8)
+        #expect(content == original)
+    }
 }

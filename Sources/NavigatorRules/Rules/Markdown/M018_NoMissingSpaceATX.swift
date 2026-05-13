@@ -15,9 +15,11 @@ public struct M018_NoMissingSpaceATX: FixableRule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         for line in LineScanner.scan(content) where !line.isInFrontmatter {
+            if codeLines.contains(line.number) { continue }
             if ATXHeadingParser.missingSpaceAfterHashes(in: line.raw) {
                 violations.append(
                     Violation(
@@ -41,9 +43,12 @@ public struct M018_NoMissingSpaceATX: FixableRule {
         rebuilt.reserveCapacity(lines.count)
 
         let scanned = LineScanner.scan(content)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
         for (index, line) in lines.enumerated() {
             let isFrontmatter = index < scanned.count ? scanned[index].isInFrontmatter : false
-            if !isFrontmatter, ATXHeadingParser.missingSpaceAfterHashes(in: line) {
+            let lineNumber = index + 1
+            let isInCode = codeLines.contains(lineNumber)
+            if !isFrontmatter, !isInCode, ATXHeadingParser.missingSpaceAfterHashes(in: line) {
                 rebuilt.append(ATXHeadingParser.insertSpaceAfterHashes(in: line))
             } else {
                 rebuilt.append(line)

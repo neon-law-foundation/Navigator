@@ -16,9 +16,11 @@ public struct M023_HeadingStartLeft: FixableRule {
         }
 
         let content = try String(contentsOf: file, encoding: .utf8)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
 
         var violations: [Violation] = []
         for line in LineScanner.scan(content) where !line.isInFrontmatter {
+            if codeLines.contains(line.number) { continue }
             if Self.headingIndent(in: line.raw)?.isEmpty == false {
                 violations.append(
                     Violation(
@@ -38,13 +40,16 @@ public struct M023_HeadingStartLeft: FixableRule {
 
         let content = try String(contentsOf: file, encoding: .utf8)
         let scanned = LineScanner.scan(content)
+        let codeLines = BlockTokenizer.linesInsideCodeBlocks(content)
         let lines = content.components(separatedBy: "\n")
 
         var rebuilt: [String] = []
         rebuilt.reserveCapacity(lines.count)
         for (index, line) in lines.enumerated() {
             let isFrontmatter = index < scanned.count ? scanned[index].isInFrontmatter : false
-            if !isFrontmatter, let indent = Self.headingIndent(in: line), !indent.isEmpty {
+            let lineNumber = index + 1
+            let isInCode = codeLines.contains(lineNumber)
+            if !isFrontmatter, !isInCode, let indent = Self.headingIndent(in: line), !indent.isEmpty {
                 rebuilt.append(String(line.dropFirst(indent.count)))
             } else {
                 rebuilt.append(line)

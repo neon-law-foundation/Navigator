@@ -80,4 +80,23 @@ struct M035HRStyleTests {
         let rule = M035_HRStyle()
         #expect(try rule.validate(file: file).isEmpty)
     }
+
+    @Test("HR-shaped lines inside fenced code do not seed or violate the style")
+    func testFencedCodeIgnored() throws {
+        let file = try makeFile(
+            content: """
+                a
+
+                ---
+
+                ```text
+                ***
+                ```
+
+                ---
+                """
+        )
+        let rule = M035_HRStyle()
+        #expect(try rule.validate(file: file).isEmpty)
+    }
 }
