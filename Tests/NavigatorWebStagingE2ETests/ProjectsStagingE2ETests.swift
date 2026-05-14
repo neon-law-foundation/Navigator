@@ -9,7 +9,7 @@ struct ProjectsStagingE2ETests {
         ProcessInfo.processInfo.environment["STAGING_E2E"] == "1"
     private static let apiBaseURL =
         ProcessInfo.processInfo.environment["STAGING_API_URL"]
-        ?? "https://staging-api.sagebrush.services"
+        ?? "https://staging.sagebrush.services"
 
     private func fetchProjectsStatus(token: String?) async throws -> Int {
         let client = HTTPClient.shared
