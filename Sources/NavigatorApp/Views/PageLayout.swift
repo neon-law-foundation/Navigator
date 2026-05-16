@@ -4,9 +4,9 @@ import NavigatorWeb
 /// Shared outer HTML document used by every server-rendered page.
 struct PageLayout<Content: HTML>: HTMLDocument {
     /// Canonical absolute base URL used when building Open Graph `og:url`
-    /// and image URLs. Hard-coded to the production NLF site so shared
-    /// links from staging still resolve to the canonical destination.
-    static var siteBaseURL: String { "https://www.neonlaw.org" }
+    /// and image URLs. Hard-coded to the production site so shared links
+    /// from staging still resolve to the canonical destination.
+    static var siteBaseURL: String { "https://www.neonlaw.com" }
 
     let pageTitle: String
     let pageDescription: String

@@ -6,6 +6,10 @@ public func configure(_ app: Application) async throws {
     app.http.server.configuration.port = port
     app.http.server.configuration.hostname = "127.0.0.1"
 
+    // Canonical-host redirect runs first so apex traffic never reaches
+    // the rest of the middleware chain — every other middleware (file
+    // serving, routing) only ever sees requests on a canonical host.
+    app.middleware.use(CanonicalHostMiddleware())
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     let posts = try BlogLoader.loadAll()

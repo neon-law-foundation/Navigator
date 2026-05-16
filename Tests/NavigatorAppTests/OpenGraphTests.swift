@@ -20,7 +20,7 @@ struct OpenGraphTests {
                     #expect(body.contains(#"<meta property="og:title" content="Hello, World">"#))
                     #expect(
                         body.contains(
-                            #"<meta property="og:url" content="https://www.neonlaw.org/blog/hello-world">"#
+                            #"<meta property="og:url" content="https://www.neonlaw.com/blog/hello-world">"#
                         )
                     )
                     #expect(body.contains(#"<meta property="og:site_name" content="Neon Law Foundation">"#))
@@ -40,7 +40,7 @@ struct OpenGraphTests {
                     let body = res.body.string
 
                     #expect(body.contains(#"<meta property="og:type" content="website">"#))
-                    #expect(body.contains(#"<meta property="og:url" content="https://www.neonlaw.org/blog">"#))
+                    #expect(body.contains(#"<meta property="og:url" content="https://www.neonlaw.com/blog">"#))
                 }
             )
         }
@@ -56,8 +56,8 @@ struct OpenGraphTests {
                     #expect(res.status == .ok)
                     let body = res.body.string
 
-                    let svgTag = #"<meta property="og:image" content="https://www.neonlaw.org/logo.svg">"#
-                    let pngTag = #"<meta property="og:image" content="https://www.neonlaw.org/logo.png">"#
+                    let svgTag = #"<meta property="og:image" content="https://www.neonlaw.com/logo.svg">"#
+                    let pngTag = #"<meta property="og:image" content="https://www.neonlaw.com/logo.png">"#
                     #expect(body.contains(svgTag))
                     #expect(body.contains(pngTag))
 
@@ -87,7 +87,7 @@ struct OpenGraphTests {
                     #expect(body.contains(#"<meta name="twitter:card" content="summary">"#))
                     #expect(
                         body.contains(
-                            #"<meta name="twitter:image" content="https://www.neonlaw.org/logo.png">"#
+                            #"<meta name="twitter:image" content="https://www.neonlaw.com/logo.png">"#
                         )
                     )
                 }

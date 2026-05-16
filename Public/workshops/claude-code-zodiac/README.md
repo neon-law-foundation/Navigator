@@ -86,8 +86,8 @@ In a fresh working directory:
 
 ```bash
 mkdir -p ~/workshops/claude-code-zodiac && cd ~/workshops/claude-code-zodiac
-curl -O https://www.neonlaw.org/workshops/claude-code-zodiac/operating-agreement.md
-curl -O https://www.neonlaw.org/workshops/claude-code-zodiac/personas.md
+curl -O https://www.neonlaw.com/workshops/claude-code-zodiac/operating-agreement.md
+curl -O https://www.neonlaw.com/workshops/claude-code-zodiac/personas.md
 ```
 
 Both files are plain Markdown. Open `operating-agreement.md` in a viewer
