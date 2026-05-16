@@ -4,6 +4,10 @@ info:
   version: 0.1.0
   description: Legal platform API for Neon Law Foundation
 
+servers:
+  - url: https://www.neonlaw.com
+    description: Production
+
 paths:
   /questions:
     get:

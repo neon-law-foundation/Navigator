@@ -78,4 +78,16 @@ public func routes(_ app: Application) throws {
     app.get("health") { _ in
         "ok"
     }
+
+    // Publish the OpenAPI contract verbatim so external clients can
+    // discover the JSON API surface without cloning this repository.
+    // The spec ships as a bundled resource of `NavigatorWeb` and is
+    // loaded once per request rather than cached — the file is small
+    // and disk reads are negligible next to TLS termination.
+    app.get("openapi.yaml") { _ -> Response in
+        let yaml = try OpenAPISpec.yamlContents()
+        var headers = HTTPHeaders()
+        headers.replaceOrAdd(name: .contentType, value: OpenAPISpec.contentType)
+        return Response(status: .ok, headers: headers, body: .init(string: yaml))
+    }
 }
