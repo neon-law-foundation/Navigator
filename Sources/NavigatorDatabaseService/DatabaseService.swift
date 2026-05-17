@@ -70,17 +70,30 @@ public actor DatabaseService {
     /// Migrations run once (Fluent tracks applied migrations). Seeds run on every call and are
     /// idempotent — existing records matched by `lookup_fields` are skipped or updated.
     public func migrate() async throws {
+        let migrator = migrator()
+        try await migrator.setupIfNeeded().get()
+        try await migrator.prepareBatch().get()
+        _ = try await NavigatorDALConfiguration.runSeeds(on: try db, logger: Logger(label: "fluent.seeds"))
+    }
+
+    /// Reverts every applied migration batch, leaving an empty schema.
+    ///
+    /// Tests use this between runs in Postgres mode to give each test a fresh schema without
+    /// tearing down the shared physical database. SQLite-mode tests do not need it because every
+    /// service gets its own in-memory database.
+    public func revert() async throws {
+        try await migrator().revertAllBatches().get()
+    }
+
+    private func migrator() -> Migrator {
         let migrations = Migrations()
         migrations.add(NavigatorDALConfiguration.migrations)
-        let migrator = Migrator(
+        return Migrator(
             databases: databases,
             migrations: migrations,
             logger: Logger(label: "fluent.migrations"),
             on: MultiThreadedEventLoopGroup.singleton.any()
         )
-        try await migrator.setupIfNeeded().get()
-        try await migrator.prepareBatch().get()
-        _ = try await NavigatorDALConfiguration.runSeeds(on: try db, logger: Logger(label: "fluent.seeds"))
     }
 
     /// Verifies the database is reachable by running an empty transaction.
@@ -90,8 +103,13 @@ public actor DatabaseService {
     }
 
     /// Shuts down all database connections.
-    public func shutdown() {
-        databases.shutdown()
+    ///
+    /// Uses Fluent's asynchronous shutdown path so connection pools fully drain before this call
+    /// returns. The synchronous `shutdown()` overload can leave Postgres pools alive past the
+    /// process's exit-time deinit checks, which fires the
+    /// `ConnectionPool.shutdown() was not called before deinit` debug assertion.
+    public func shutdown() async {
+        await databases.shutdownAsync()
     }
 }
 

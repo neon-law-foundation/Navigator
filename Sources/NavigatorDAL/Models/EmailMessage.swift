@@ -40,10 +40,11 @@ public final class EmailMessage: Model, @unchecked Sendable {
     /// The RFC 5322 `References` header parsed into an ordered list of ancestor
     /// `Message-ID` values (oldest first).
     ///
-    /// Stored as a JSON array. On Postgres, a GIN index accelerates ancestor
-    /// lookups during thread resolution.
+    /// Persisted as a JSONB document via ``JSONStored`` so Fluent encodes the
+    /// array as one JSON value on both Postgres and SQLite. Access the list via
+    /// `references.value`.
     @Field(key: "references")
-    public var references: [String]
+    public var references: JSONStored<[String]>
 
     /// Denormalized thread identifier computed at ingestion.
     ///
@@ -67,14 +68,15 @@ public final class EmailMessage: Model, @unchecked Sendable {
     @Field(key: "to_address")
     public var toAddress: String
 
-    /// Addresses in the `Cc` header, if any. Stored as a JSON array.
+    /// Addresses in the `Cc` header, if any. Stored as a JSONB document via
+    /// ``JSONStored``. Access the list via `ccAddresses.value`.
     @Field(key: "cc_addresses")
-    public var ccAddresses: [String]
+    public var ccAddresses: JSONStored<[String]>
 
     /// Addresses in the `Bcc` header, if any. Rarely populated on inbound mail.
-    /// Stored as a JSON array.
+    /// Stored as a JSONB document via ``JSONStored``. Access via `bccAddresses.value`.
     @Field(key: "bcc_addresses")
-    public var bccAddresses: [String]
+    public var bccAddresses: JSONStored<[String]>
 
     /// The `Subject` header value. Stored verbatim — no normalization.
     @Field(key: "subject")

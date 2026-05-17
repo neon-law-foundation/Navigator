@@ -140,9 +140,9 @@ public actor TemplateService {
         template.description = description
         template.respondentType = respondentType
         template.markdownContent = markdownContent
-        template.frontmatter = frontmatter
-        template.questionnaire = questionnaire
-        template.workflow = workflow
+        template.frontmatter = JSONStored(frontmatter)
+        template.questionnaire = JSONStored(questionnaire)
+        template.workflow = JSONStored(workflow)
         template.$owner.id = ownerID
 
         try await template.save(on: database)

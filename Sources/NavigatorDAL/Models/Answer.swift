@@ -39,13 +39,15 @@ public final class Answer: Model, @unchecked Sendable {
     @OptionalParent(key: "entity_id")
     public var entity: Entity?
 
-    /// The recorded value for this answer, serialised as a JSON string.
+    /// The recorded value for this answer, persisted as a JSONB document.
     ///
-    /// The format of the value depends on the associated ``Question``'s `questionType`.
-    /// For example, a `yesNo` question stores `"true"` or `"false"`, while a `multiSelect`
-    /// question stores a JSON array of strings.
+    /// The format of the inner string depends on the associated ``Question``'s
+    /// `questionType`. For example, a `yesNo` question stores `"true"` or
+    /// `"false"`, while a `multiSelect` question stores a JSON array of strings.
+    /// The ``JSONStored`` wrapper makes Fluent encode the value as one JSONB
+    /// document on both Postgres and SQLite.
     @Field(key: "value")
-    public var value: String
+    public var value: JSONStored<String>
 
     /// The timestamp when this answer was recorded.
     @Timestamp(key: "inserted_at", on: .create)

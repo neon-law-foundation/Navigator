@@ -1,42 +1,62 @@
 import Configuration
 import NavigatorDatabaseService
 
-/// Builds a `DatabaseService` for the test suite using the same
-/// configuration path `NavigatorApp` uses at boot.
+/// Runs `operation` against a freshly-migrated ``DatabaseService`` and tears
+/// the service down before returning.
 ///
-/// When `APP_ENV=production` and `DATABASE_URL` are set the service
-/// connects to Postgres; otherwise it falls back to SQLite in-memory.
-/// Migrations run before the service is returned so the caller can
-/// immediately make queries against it.
+/// In Postgres mode the call is serialized on ``DatabaseTestSerializer/shared``
+/// and the schema is reverted both before and after `operation` so each test
+/// runs against the same clean slate it would get from an SQLite in-memory
+/// database. SQLite-mode runs skip the lock and the reverts because every
+/// service already owns its own ephemeral database.
 ///
-/// Postgres-mode callers must wrap their setup-and-test block in
-/// ``withDatabaseTestLock(_:)`` so concurrent tests do not stomp on the
-/// shared physical database.
-func makeTestDatabaseService() async throws -> DatabaseService {
-    let service = try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:")
-    try await service.migrate()
-    return service
+/// `shutdown()` is awaited on every exit path — including thrown errors — so
+/// the underlying Postgres connection pool reaches `deinit` only after it has
+/// drained. Bypassing this helper risks the
+/// `ConnectionPool.shutdown() was not called before deinit` debug assertion
+/// at process exit.
+func withTestDatabaseService<T>(
+    _ operation: (DatabaseService) async throws -> T
+) async throws -> T {
+    let usePostgres = isUsingPostgres()
+    if usePostgres {
+        await DatabaseTestSerializer.shared.acquire()
+    }
+    let outcome: Result<T, Error>
+    do {
+        outcome = .success(try await runOnce(usePostgres: usePostgres, operation: operation))
+    } catch {
+        outcome = .failure(error)
+    }
+    if usePostgres {
+        await DatabaseTestSerializer.shared.release()
+    }
+    return try outcome.get()
 }
 
-/// Acquires the process-wide Postgres-test mutex when the suite runs in
-/// Postgres mode and runs `operation` while holding it. SQLite-mode runs
-/// invoke `operation` immediately because every test already gets its
-/// own in-memory database.
-func withDatabaseTestLock<T>(
-    _ operation: () async throws -> T
+private func runOnce<T>(
+    usePostgres: Bool,
+    operation: (DatabaseService) async throws -> T
 ) async throws -> T {
-    if isUsingPostgres() {
-        await DatabaseTestSerializer.shared.acquire()
-        do {
-            let result = try await operation()
-            await DatabaseTestSerializer.shared.release()
-            return result
-        } catch {
-            await DatabaseTestSerializer.shared.release()
-            throw error
+    let service = try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:")
+    do {
+        if usePostgres {
+            try? await service.revert()
         }
+        try await service.migrate()
+        let value = try await operation(service)
+        if usePostgres {
+            try? await service.revert()
+        }
+        await service.shutdown()
+        return value
+    } catch {
+        if usePostgres {
+            try? await service.revert()
+        }
+        await service.shutdown()
+        throw error
     }
-    return try await operation()
 }
 
 private func isUsingPostgres() -> Bool {

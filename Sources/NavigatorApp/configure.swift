@@ -25,7 +25,9 @@ public func configure(
     app.http.server.configuration.hostname = "127.0.0.1"
 
     let databaseService = try appConfiguration.makeDatabaseService()
-    try await databaseService.migrate()
+    // Register for shutdown BEFORE migrating so the connection pool drains
+    // cleanly even if `migrate()` throws — otherwise the unreleased pool
+    // hits its `deinit` assertion at process exit.
     await app.storage.setWithAsyncShutdown(
         DatabaseServiceStorageKey.self,
         to: databaseService,
@@ -33,6 +35,7 @@ public func configure(
             await service.shutdown()
         }
     )
+    try await databaseService.migrate()
 
     // Canonical-host redirect runs first so apex traffic never reaches
     // the rest of the middleware chain — every other middleware (file

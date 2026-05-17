@@ -56,7 +56,7 @@ struct NotationServiceTests {
         template.markdownContent = "# Test"
         template.frontmatter = [:]
         template.questionnaire = [:]
-        template.workflow = workflow
+        template.workflow = JSONStored(workflow)
         try await template.save(on: db)
 
         return (template, entity)
@@ -80,8 +80,8 @@ struct NotationServiceTests {
                 entityID: entity.id!
             )
 
-            #expect(notation.stateHistory.count == 1)
-            let event = notation.stateHistory[0]
+            #expect(notation.stateHistory.value.count == 1)
+            let event = notation.stateHistory.value[0]
             #expect(event.fromState == "BEGIN")
             #expect(event.condition == "_")
             #expect(event.toState == "staff_review")
@@ -119,9 +119,9 @@ struct NotationServiceTests {
                 actor: .person(id: person.id!)
             )
 
-            #expect(updated.stateHistory.count == 2)
-            #expect(updated.stateHistory[1].toState == "END")
-            #expect(updated.stateHistory[1].actor == .person(id: person.id!))
+            #expect(updated.stateHistory.value.count == 2)
+            #expect(updated.stateHistory.value[1].toState == "END")
+            #expect(updated.stateHistory.value[1].actor == .person(id: person.id!))
         }
     }
 
@@ -140,7 +140,7 @@ struct NotationServiceTests {
                 entityID: entity.id!
             )
 
-            #expect(notation.stateHistory.last?.toState == "END")
+            #expect(notation.stateHistory.value.last?.toState == "END")
 
             await #expect(throws: Error.self) {
                 _ = try await service.appendEvent(
@@ -292,7 +292,7 @@ struct NotationServiceTests {
                 actor: .entity(id: entity.id!)
             )
 
-            #expect(updated.stateHistory.last?.toState == "END")
+            #expect(updated.stateHistory.value.last?.toState == "END")
         }
     }
 

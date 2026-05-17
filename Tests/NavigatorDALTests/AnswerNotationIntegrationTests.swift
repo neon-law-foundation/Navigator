@@ -73,14 +73,14 @@ struct AnswerNotationIntegrationTests {
             let notation = Notation()
             notation.$template.id = templateID
             notation.$person.id = personID
-            notation.stateHistory = []
-            notation.answers = [question?.code ?? "test_code": answerID]
+            notation.stateHistory = JSONStored([])
+            notation.answers = JSONStored([question?.code ?? "test_code": answerID])
             notation.renderedContent = "Hello, World!"
             try await notation.save(on: app.db)
 
             let notationID = try notation.requireID()
             let loaded = try await Notation.find(notationID, on: app.db)
-            #expect(loaded?.answers[question?.code ?? "test_code"] == answerID)
+            #expect(loaded?.answers.value[question?.code ?? "test_code"] == answerID)
             #expect(loaded?.renderedContent == "Hello, World!")
         }
     }
@@ -126,7 +126,7 @@ struct AnswerNotationIntegrationTests {
             )
             // Value is stored as a JSON-encoded string, so "123 Main St" → "\"123 Main St\""
             #expect(found != nil)
-            #expect(found?.value == AnswerRepository.normalizeToJSON("123 Main St"))
+            #expect(found?.value.value == AnswerRepository.normalizeToJSON("123 Main St"))
         }
     }
 }

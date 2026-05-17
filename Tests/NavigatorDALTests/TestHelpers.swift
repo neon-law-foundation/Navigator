@@ -54,18 +54,20 @@ private func runApplication<T>(
     operation: (Application) async throws -> T
 ) async throws -> T {
     let app = try await Application.make(.testing)
-    if usePostgres, let databaseURL {
-        let config = try SQLPostgresConfiguration(url: databaseURL)
-        app.databases.use(.postgres(configuration: config), as: .psql)
-    } else {
-        app.databases.use(.sqlite(.memory), as: .sqlite)
-    }
-    for migration in NavigatorDALConfiguration.migrations {
-        app.migrations.add(migration)
-    }
-    try await app.autoMigrate()
-
     do {
+        if usePostgres, let databaseURL {
+            let config = try SQLPostgresConfiguration(url: databaseURL)
+            app.databases.use(.postgres(configuration: config), as: .psql)
+        } else {
+            app.databases.use(.sqlite(.memory), as: .sqlite)
+        }
+        for migration in NavigatorDALConfiguration.migrations {
+            app.migrations.add(migration)
+        }
+        if usePostgres {
+            try? await app.autoRevert()
+        }
+        try await app.autoMigrate()
         let result = try await operation(app)
         if usePostgres {
             try await app.autoRevert()
@@ -76,7 +78,7 @@ private func runApplication<T>(
         if usePostgres {
             try? await app.autoRevert()
         }
-        try await app.asyncShutdown()
+        try? await app.asyncShutdown()
         throw error
     }
 }

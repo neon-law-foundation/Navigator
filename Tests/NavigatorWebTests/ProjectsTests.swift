@@ -94,170 +94,155 @@ struct ProjectsTests {
 
     @Test("Admin receives all seeded projects")
     func adminSeesAllProjects() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
-        let db = try await dbService.db
+        try await withTestDatabaseService { dbService in
+            let db = try await dbService.db
 
-        let p1 = try await createProject(db, codename: "alpha")
-        let p2 = try await createProject(db, codename: "beta")
-        let _ = try await createProject(db, codename: "gamma")
+            let p1 = try await createProject(db, codename: "alpha")
+            let p2 = try await createProject(db, codename: "beta")
+            let _ = try await createProject(db, codename: "gamma")
 
-        let adminPerson = try await createPerson(db, name: "Admin User", email: "admin@example.com")
-        let _ = try await createUser(db, person: adminPerson, sub: "admin-sub", role: .admin)
-        try await assignPersonToProject(db, person: adminPerson, project: p1, role: .staff)
-        try await assignPersonToProject(db, person: adminPerson, project: p2, role: .staff)
+            let adminPerson = try await createPerson(db, name: "Admin User", email: "admin@example.com")
+            let _ = try await createUser(db, person: adminPerson, sub: "admin-sub", role: .admin)
+            try await assignPersonToProject(db, person: adminPerson, project: p1, role: .staff)
+            try await assignPersonToProject(db, person: adminPerson, project: p2, role: .staff)
 
-        let handler = try await makeHandler(dbService: dbService)
-        let output = try await withAuthContext(sub: "admin-sub", role: .admin) {
-            try await handler.listProjects(.init())
-        }
-
-        if case .ok(let response) = output {
-            if case .json(let summaries) = response.body {
-                let codenames = summaries.map { $0.codename }
-                #expect(codenames.contains("alpha"))
-                #expect(codenames.contains("beta"))
-                #expect(codenames.contains("gamma"))
-            } else {
-                Issue.record("Expected json body")
+            let handler = try await makeHandler(dbService: dbService)
+            let output = try await withAuthContext(sub: "admin-sub", role: .admin) {
+                try await handler.listProjects(.init())
             }
-        } else {
-            Issue.record("Expected ok response")
-        }
 
-        await dbService.shutdown()
+            if case .ok(let response) = output {
+                if case .json(let summaries) = response.body {
+                    let codenames = summaries.map { $0.codename }
+                    #expect(codenames.contains("alpha"))
+                    #expect(codenames.contains("beta"))
+                    #expect(codenames.contains("gamma"))
+                } else {
+                    Issue.record("Expected json body")
+                }
+            } else {
+                Issue.record("Expected ok response")
+            }
+        }
     }
 
     @Test("Staff receives only their assigned project")
     func staffSeesOnlyAssignedProject() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
-        let db = try await dbService.db
+        try await withTestDatabaseService { dbService in
+            let db = try await dbService.db
 
-        let projectA = try await createProject(db, codename: "project-a")
-        let _ = try await createProject(db, codename: "project-b")
-        let _ = try await createProject(db, codename: "project-c")
+            let projectA = try await createProject(db, codename: "project-a")
+            let _ = try await createProject(db, codename: "project-b")
+            let _ = try await createProject(db, codename: "project-c")
 
-        let staffPerson = try await createPerson(db, name: "Staff User", email: "staff@example.com")
-        let _ = try await createUser(db, person: staffPerson, sub: "staff-sub", role: .staff)
-        try await assignPersonToProject(db, person: staffPerson, project: projectA, role: .staff)
+            let staffPerson = try await createPerson(db, name: "Staff User", email: "staff@example.com")
+            let _ = try await createUser(db, person: staffPerson, sub: "staff-sub", role: .staff)
+            try await assignPersonToProject(db, person: staffPerson, project: projectA, role: .staff)
 
-        let handler = try await makeHandler(dbService: dbService)
-        let output = try await withAuthContext(sub: "staff-sub", role: .staff) {
-            try await handler.listProjects(.init())
-        }
-
-        if case .ok(let response) = output {
-            if case .json(let summaries) = response.body {
-                #expect(summaries.count == 1)
-                #expect(summaries[0].codename == "project-a")
-            } else {
-                Issue.record("Expected json body")
+            let handler = try await makeHandler(dbService: dbService)
+            let output = try await withAuthContext(sub: "staff-sub", role: .staff) {
+                try await handler.listProjects(.init())
             }
-        } else {
-            Issue.record("Expected ok response")
-        }
 
-        await dbService.shutdown()
+            if case .ok(let response) = output {
+                if case .json(let summaries) = response.body {
+                    #expect(summaries.count == 1)
+                    #expect(summaries[0].codename == "project-a")
+                } else {
+                    Issue.record("Expected json body")
+                }
+            } else {
+                Issue.record("Expected ok response")
+            }
+        }
     }
 
     @Test("Client receives only their assigned project")
     func clientSeesOnlyAssignedProject() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
-        let db = try await dbService.db
+        try await withTestDatabaseService { dbService in
+            let db = try await dbService.db
 
-        let projectX = try await createProject(db, codename: "project-x")
-        let _ = try await createProject(db, codename: "project-y")
-        let _ = try await createProject(db, codename: "project-z")
+            let projectX = try await createProject(db, codename: "project-x")
+            let _ = try await createProject(db, codename: "project-y")
+            let _ = try await createProject(db, codename: "project-z")
 
-        let clientPerson = try await createPerson(
-            db,
-            name: "Client User",
-            email: "client@example.com"
-        )
-        let _ = try await createUser(db, person: clientPerson, sub: "client-sub", role: .client)
-        try await assignPersonToProject(db, person: clientPerson, project: projectX, role: .client)
+            let clientPerson = try await createPerson(
+                db,
+                name: "Client User",
+                email: "client@example.com"
+            )
+            let _ = try await createUser(db, person: clientPerson, sub: "client-sub", role: .client)
+            try await assignPersonToProject(db, person: clientPerson, project: projectX, role: .client)
 
-        let handler = try await makeHandler(dbService: dbService)
-        let output = try await withAuthContext(sub: "client-sub", role: .client) {
-            try await handler.listProjects(.init())
-        }
-
-        if case .ok(let response) = output {
-            if case .json(let summaries) = response.body {
-                #expect(summaries.count == 1)
-                #expect(summaries[0].codename == "project-x")
-            } else {
-                Issue.record("Expected json body")
+            let handler = try await makeHandler(dbService: dbService)
+            let output = try await withAuthContext(sub: "client-sub", role: .client) {
+                try await handler.listProjects(.init())
             }
-        } else {
-            Issue.record("Expected ok response")
-        }
 
-        await dbService.shutdown()
+            if case .ok(let response) = output {
+                if case .json(let summaries) = response.body {
+                    #expect(summaries.count == 1)
+                    #expect(summaries[0].codename == "project-x")
+                } else {
+                    Issue.record("Expected json body")
+                }
+            } else {
+                Issue.record("Expected ok response")
+            }
+        }
     }
 
     @Test("No authenticatedUser returns 401")
     func missingAuthenticatedUserReturns401() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
+        try await withTestDatabaseService { dbService in
+            let handler = try await makeHandler(dbService: dbService)
 
-        let handler = try await makeHandler(dbService: dbService)
+            let output = try await handler.listProjects(.init())
 
-        let output = try await handler.listProjects(.init())
-
-        if case .undocumented(let statusCode, _) = output {
-            #expect(statusCode == 401)
-        } else {
-            Issue.record("Expected undocumented 401 response")
+            if case .undocumented(let statusCode, _) = output {
+                #expect(statusCode == 401)
+            } else {
+                Issue.record("Expected undocumented 401 response")
+            }
         }
-
-        await dbService.shutdown()
     }
 
     @Test("getProject returns 404 for unknown ID")
     func getProjectReturns404ForUnknownID() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
+        try await withTestDatabaseService { dbService in
+            let handler = try await makeHandler(dbService: dbService)
+            let output = try await withAuthContext(sub: "admin-sub", role: .admin) {
+                try await handler.getProject(.init(path: .init(id: UUID())))
+            }
 
-        let handler = try await makeHandler(dbService: dbService)
-        let output = try await withAuthContext(sub: "admin-sub", role: .admin) {
-            try await handler.getProject(.init(path: .init(id: UUID())))
+            if case .notFound = output {
+                // pass
+            } else {
+                Issue.record("Expected 404 response for unknown project ID")
+            }
         }
-
-        if case .notFound = output {
-            // pass
-        } else {
-            Issue.record("Expected 404 response for unknown project ID")
-        }
-
-        await dbService.shutdown()
     }
 
     @Test("createProject returns 403 for client role")
     func createProjectReturns403ForClient() async throws {
-        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
-        try await dbService.migrate()
-        let db = try await dbService.db
+        try await withTestDatabaseService { dbService in
+            let db = try await dbService.db
 
-        let clientPerson = try await createPerson(db, name: "Client User", email: "client@example.com")
-        let _ = try await createUser(db, person: clientPerson, sub: "client-sub", role: .client)
+            let clientPerson = try await createPerson(db, name: "Client User", email: "client@example.com")
+            let _ = try await createUser(db, person: clientPerson, sub: "client-sub", role: .client)
 
-        let handler = try await makeHandler(dbService: dbService)
-        let output = try await withAuthContext(sub: "client-sub", role: .client) {
-            try await handler.createProject(
-                .init(body: .json(.init(codename: "test-project", title: nil, projectType: nil)))
-            )
+            let handler = try await makeHandler(dbService: dbService)
+            let output = try await withAuthContext(sub: "client-sub", role: .client) {
+                try await handler.createProject(
+                    .init(body: .json(.init(codename: "test-project", title: nil, projectType: nil)))
+                )
+            }
+
+            if case .forbidden = output {
+                // pass
+            } else {
+                Issue.record("Expected 403 response for client role")
+            }
         }
-
-        if case .forbidden = output {
-            // pass
-        } else {
-            Issue.record("Expected 403 response for client role")
-        }
-
-        await dbService.shutdown()
     }
-
 }

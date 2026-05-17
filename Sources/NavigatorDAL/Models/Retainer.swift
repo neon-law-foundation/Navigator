@@ -28,10 +28,11 @@ public final class Retainer: Model, @unchecked Sendable {
 
     /// Persons and/or entities covered by this retainer.
     ///
-    /// Stored as a JSONB array. Each element is a ``RetainerClient`` identifying
-    /// either a `people.id` or an `entities.id`.
+    /// Persisted as a JSONB document via ``JSONStored`` so Fluent encodes the
+    /// array as a single JSON value (rather than a Postgres `jsonb[]` array).
+    /// Access the contents via `clients.value`.
     @Field(key: "clients")
-    public var clients: [RetainerClient]
+    public var clients: JSONStored<[RetainerClient]>
 
     /// The signed retainer agreement notation.
     @Parent(key: "notation_id")
@@ -60,7 +61,7 @@ public final class Retainer: Model, @unchecked Sendable {
     public var projects: [Project]
 
     public init() {
-        self.clients = []
+        self.clients = JSONStored([])
         self.status = .pendingSignature
     }
 }

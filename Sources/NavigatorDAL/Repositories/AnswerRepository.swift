@@ -69,11 +69,12 @@ public struct AnswerRepository: Sendable {
         on database: Database
     ) async throws -> Answer {
         let jsonValue = Self.normalizeToJSON(value)
+        let storedValue = JSONStored(jsonValue)
 
         var query = Answer.query(on: database)
             .filter(\.$question.$id == questionID)
             .filter(\.$person.$id == personID)
-            .filter(\.$value == jsonValue)
+            .filter(\.$value == storedValue)
 
         if let entityID = entityID {
             query = query.filter(\.$entity.$id == entityID)
@@ -89,7 +90,7 @@ public struct AnswerRepository: Sendable {
         answer.$question.id = questionID
         answer.$person.id = personID
         answer.$entity.id = entityID
-        answer.value = jsonValue
+        answer.value = storedValue
         try await answer.save(on: database)
         return answer
     }

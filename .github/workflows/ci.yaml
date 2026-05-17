@@ -137,4 +137,7 @@ jobs:
           exit 1
 
       - name: Run tests against Postgres
-        run: swift test
+        # Postgres is a shared physical database; `--no-parallel` forces
+        # serial test execution so suites do not race each other on
+        # migration / data state.
+        run: swift test --no-parallel

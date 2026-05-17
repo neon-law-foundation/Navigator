@@ -76,9 +76,10 @@ public final class Template: Model, @unchecked Sendable {
 
     /// Structured metadata extracted from the template's frontmatter.
     ///
-    /// Stored as JSONB in the database, allowing for flexible key-value pairs.
+    /// Persisted as a JSONB document via ``JSONStored``; access the dictionary
+    /// via `frontmatter.value`.
     @Field(key: "frontmatter")
-    public var frontmatter: [String: String]
+    public var frontmatter: JSONStored<[String: String]>
 
     /// The git commit SHA from the source repository.
     ///
@@ -107,18 +108,20 @@ public final class Template: Model, @unchecked Sendable {
     /// The questionnaire state machine for this template, stored as a raw YAML state map.
     ///
     /// Keys are state names (e.g. `"BEGIN"`, `"name"`, `"END"`); values are transition maps
-    /// from condition strings to destination state names.
+    /// from condition strings to destination state names. Persisted as a JSONB
+    /// document via ``JSONStored``; access via `questionnaire.value`.
     @Field(key: "questionnaire")
-    public var questionnaire: [String: [String: String]]
+    public var questionnaire: JSONStored<[String: [String: String]]>
 
     /// The workflow state machine for this template, stored as a raw YAML state map.
     ///
     /// Keys are state names (e.g. `"BEGIN"`, `"staff_review"`, `"END"`); values are
     /// transition maps from condition strings to destination state names. The actor class
     /// for each state is derived at runtime from the state name prefix via
-    /// ``resolveWorkflowStep(stateName:transitions:)``. Defaults to an empty map.
+    /// ``resolveWorkflowStep(stateName:transitions:)``. Persisted as a JSONB
+    /// document via ``JSONStored``; access via `workflow.value`.
     @Field(key: "workflow")
-    public var workflow: [String: [String: String]]
+    public var workflow: JSONStored<[String: [String: String]]>
 
     /// The timestamp when this template version was created.
     @Timestamp(key: "inserted_at", on: .create)

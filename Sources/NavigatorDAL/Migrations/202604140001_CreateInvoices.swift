@@ -16,16 +16,13 @@ import SQLKit
 /// field Navigator cannot fill.
 ///
 /// Monetary columns are declared via `.custom(SQLRaw("NUMERIC(19,4)"))` so
-/// that Postgres — the production database — stores them as exact numeric
-/// values with no precision loss. SQLite treats `NUMERIC(19,4)` via type
-/// affinity and is only used by the test harness.
+/// that Postgres stores them as exact numeric values with no precision loss.
+/// SQLite resolves `NUMERIC(19,4)` via type affinity and accepts the same
+/// declaration without further configuration.
 ///
-/// Three Postgres CHECK constraints pin the string-typed enums: `status`
-/// (`draft`/`submitted`/`authorised`/`paid`/`voided`/`deleted`),
-/// `invoice_type` (`accrec`/`accpay`), and `currency_code` (ISO-4217, 3
-/// characters). SQLite (used in the default test harness) does not support
-/// `ALTER TABLE ... ADD CONSTRAINT ... CHECK`, so the constraints are
-/// Postgres-only.
+/// The string-typed enums (`status`, `invoice_type`, `currency_code`) are
+/// validated by the Swift `Invoice` model rather than by per-engine `CHECK`
+/// constraints, so the schema is identical on SQLite and Postgres.
 struct CreateInvoices: AsyncMigration {
     func prepare(on database: any Database) async throws {
         try await database.schema(Invoice.schema)
@@ -57,30 +54,6 @@ struct CreateInvoices: AsyncMigration {
             .field("updated_at", .datetime, .required)
             .unique(on: "billing_profile_id", "external_invoice_id")
             .create()
-
-        guard let sql = database as? SQLDatabase else { return }
-        guard sql.dialect.name == "postgresql" else { return }
-        try await sql.raw(
-            """
-            ALTER TABLE invoices
-            ADD CONSTRAINT invoices_status_check
-            CHECK (status IN ('draft', 'submitted', 'authorised', 'paid', 'voided', 'deleted'))
-            """
-        ).run()
-        try await sql.raw(
-            """
-            ALTER TABLE invoices
-            ADD CONSTRAINT invoices_invoice_type_check
-            CHECK (invoice_type IN ('accrec', 'accpay'))
-            """
-        ).run()
-        try await sql.raw(
-            """
-            ALTER TABLE invoices
-            ADD CONSTRAINT invoices_currency_code_check
-            CHECK (char_length(currency_code) = 3)
-            """
-        ).run()
     }
 
     func revert(on database: any Database) async throws {

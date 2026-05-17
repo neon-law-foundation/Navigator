@@ -39,7 +39,7 @@ private func makeActiveRetainer(
 {
     let retainer = Retainer()
     retainer.$notation.id = notationId
-    retainer.clients = clients
+    retainer.clients = JSONStored(clients)
     retainer.status = .active
     retainer.startsAt = Date(timeIntervalSinceNow: -3600)
     try await retainer.save(on: db)

@@ -13,8 +13,10 @@ import Vapor
 ///
 /// In Postgres mode the helper acquires the shared
 /// ``DatabaseTestSerializer`` lock so configure/migrate cycles do not
-/// race with other suites against the same physical database; the lock
-/// releases when Vapor shuts down the application.
+/// race with other suites against the same physical database, reverts
+/// any leftover schema from a prior crashed run before configure() runs
+/// migrations, and reverts again at app shutdown so the next test starts
+/// against an empty database. The lock releases after the revert.
 @Sendable
 func testConfigure(_ app: Application) async throws {
     let appConfiguration = AppConfiguration.fromEnvironment(sqliteDefaultPath: ":memory:")
@@ -23,6 +25,11 @@ func testConfigure(_ app: Application) async throws {
         await DatabaseTestSerializer.shared.acquire()
     }
     do {
+        if usePostgres {
+            let cleanService = try appConfiguration.makeDatabaseService()
+            try? await cleanService.revert()
+            await cleanService.shutdown()
+        }
         try await configure(app, appConfiguration: appConfiguration)
     } catch {
         if usePostgres {
@@ -31,12 +38,13 @@ func testConfigure(_ app: Application) async throws {
         throw error
     }
     if usePostgres {
-        app.lifecycle.use(DatabaseTestLockReleaser())
+        app.lifecycle.use(PostgresTestCleanupHandler())
     }
 }
 
-struct DatabaseTestLockReleaser: LifecycleHandler {
+struct PostgresTestCleanupHandler: LifecycleHandler {
     func shutdownAsync(_ application: Application) async {
+        try? await application.autoRevert()
         await DatabaseTestSerializer.shared.release()
     }
 }

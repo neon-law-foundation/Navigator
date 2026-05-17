@@ -29,13 +29,13 @@ struct EmailIngestionService: Sendable {
         let message = EmailMessage()
         message.messageId = request.messageId
         message.inReplyTo = request.inReplyTo
-        message.references = request.references ?? []
+        message.references = JSONStored(request.references ?? [])
         message.threadId = threadId
         message.fromAddress = request.fromAddress
         message.fromName = request.fromName
         message.toAddress = request.toAddress
-        message.ccAddresses = request.ccAddresses ?? []
-        message.bccAddresses = request.bccAddresses ?? []
+        message.ccAddresses = JSONStored(request.ccAddresses ?? [])
+        message.bccAddresses = JSONStored(request.bccAddresses ?? [])
         message.subject = request.subject
         message.textBody = request.textBody
         message.htmlBody = request.htmlBody
