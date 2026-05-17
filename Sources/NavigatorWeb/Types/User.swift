@@ -1,10 +1,8 @@
 /// A minimal authenticated-user view-model consumed by header components.
 ///
-/// Introduced in Milestone 2 step 2 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) as a temporary stub. The real shape will
-/// arrive when the API auth module is wired through to the web layer; in
-/// the interim, components that need to render an authenticated/unauthenticated
-/// distinction depend only on these three fields.
+/// Components that need to render an authenticated/unauthenticated
+/// distinction depend only on these three fields. A richer shape can grow
+/// here as the API auth module is wired through to the web layer.
 ///
 /// Named `WebUser` rather than `User` so as not to collide with the
 /// `NavigatorDAL.User` Fluent model already re-exported from this module.

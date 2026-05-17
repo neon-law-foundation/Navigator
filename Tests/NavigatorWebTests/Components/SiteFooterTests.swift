@@ -30,13 +30,4 @@ struct SiteFooterTests {
         #expect(html.contains(#"data-brand="Neon Law""#))
         #expect(html.contains("© 2030 Neon Law. All rights reserved."))
     }
-
-    @Test("renders Sagebrush brand footer links")
-    func rendersSagebrushLinks() {
-        let html = SiteFooter(brand: SagebrushBrand(), year: 2026).render()
-
-        #expect(html.contains(#"<a href="/privacy""#))
-        #expect(html.contains(#"<a href="/terms""#))
-        #expect(html.contains(#"<a href="/contact""#))
-    }
 }

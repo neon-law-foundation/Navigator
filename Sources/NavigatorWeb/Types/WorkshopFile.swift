@@ -1,15 +1,9 @@
 /// A file surfaced in a workshop — pleadings, contracts, correspondence,
 /// statutes, prompts, etc.
 ///
-/// Mirrors the shape returned by NLF/API's `GET /projects/{id}/files` so
-/// callers can pass API responses to `DocumentViewer` and
-/// `WorkshopFileSidebar` without hand-translating. The optional
-/// `contentType` disambiguates how the viewer should render the file; when
-/// omitted, the viewer falls back to name/url suffix detection.
-///
-/// Introduced in Milestone 2 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) when porting `WorkshopWorkspace` from the
-/// archived NLF/WebComponents React library.
+/// `DocumentViewer` and `WorkshopFileSidebar` both consume this shape. The
+/// optional `contentType` disambiguates how the viewer should render the
+/// file; when omitted, the viewer falls back to name/url suffix detection.
 public struct WorkshopFile: Sendable, Equatable, Codable {
     /// How `DocumentViewer` should render the file body.
     public enum ContentType: String, Sendable, Equatable, Codable {

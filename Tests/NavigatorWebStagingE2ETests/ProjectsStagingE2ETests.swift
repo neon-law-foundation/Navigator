@@ -7,13 +7,13 @@ struct ProjectsStagingE2ETests {
 
     private static let enabled =
         ProcessInfo.processInfo.environment["STAGING_E2E"] == "1"
-    private static let apiBaseURL =
-        ProcessInfo.processInfo.environment["STAGING_API_URL"]
-        ?? "https://staging.sagebrush.services"
 
     private func fetchProjectsStatus(token: String?) async throws -> Int {
+        let apiBaseURL = try #require(
+            ProcessInfo.processInfo.environment["STAGING_API_URL"]
+        )
         let client = HTTPClient.shared
-        var request = HTTPClientRequest(url: "\(Self.apiBaseURL)/api/projects")
+        var request = HTTPClientRequest(url: "\(apiBaseURL)/api/projects")
         if let token {
             request.headers.add(name: "Authorization", value: "Bearer \(token)")
         }

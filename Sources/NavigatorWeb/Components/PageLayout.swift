@@ -6,10 +6,9 @@ import Elementary
 /// — doctype, `<html>`, `<head>` (title, charset, viewport, favicon, Tailwind
 /// CDN), and `<body>` — and renders caller-supplied content inside `<body>`.
 ///
-/// The three web apps (`NLF/Web`, `NeonLaw/Web`, `Sagebrush/Web`) compose
-/// their pages by wrapping brand-aware components in `PageLayout`; composite
-/// layouts in this module (`BlogIndexLayout`, `BlogPostLayout`) also delegate
-/// to `PageLayout.sharedHead(brand:)` so every entry point emits the same
+/// Brand-aware pages wrap their content in `PageLayout`; composite layouts
+/// in this module (`BlogIndexLayout`, `BlogPostLayout`) also delegate to
+/// `PageLayout.sharedHead(brand:)` so every entry point emits the same
 /// `<head>` markup.
 ///
 /// Tailwind is loaded via the Play CDN (`<script src="https://cdn.tailwindcss.com">`).

@@ -588,9 +588,9 @@ thread root; no late re-parenting is attempted in v1.
 
 Inbound email is intentionally separate from physical mail (`LETTER` /
 `MAILROOM`): different models, different tables, no shared parent. The
-`to_address` column alone identifies the brand (`support@neonlaw.org`,
-`support@neonlaw.com`, `support@sagebrush.services`) because each
-deployment runs a single support mailbox.
+`to_address` column alone identifies the brand (e.g. `support@neonlaw.org`
+vs `support@neonlaw.com`) because each deployment runs a single support
+mailbox.
 
 ### 11. Client Access Gating (Retainer)
 
