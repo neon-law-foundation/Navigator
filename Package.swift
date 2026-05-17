@@ -216,7 +216,8 @@ let package = Package(
         .testTarget(
             name: "NavigatorWebStagingE2ETests",
             dependencies: [
-                .product(name: "AsyncHTTPClient", package: "async-http-client")
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "Configuration", package: "swift-configuration"),
             ]
         ),
         .testTarget(
