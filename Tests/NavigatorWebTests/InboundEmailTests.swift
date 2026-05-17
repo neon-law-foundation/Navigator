@@ -72,7 +72,7 @@ struct InboundEmailTests {
 
     @Test("Missing signature returns 401")
     func missingSignatureReturns401() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
         let request = makeRequest()
@@ -91,7 +91,7 @@ struct InboundEmailTests {
 
     @Test("Wrong signature returns 401")
     func wrongSignatureReturns401() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
         let request = makeRequest()
@@ -112,7 +112,7 @@ struct InboundEmailTests {
 
     @Test("Valid request creates email and returns 200")
     func validRequestCreatesEmail() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
         let request = makeRequest()
@@ -147,7 +147,7 @@ struct InboundEmailTests {
 
     @Test("Duplicate message_id returns 409 with existing record")
     func duplicateReturns409() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
         let request = makeRequest(messageId: "<dup@example.com>")
@@ -181,7 +181,7 @@ struct InboundEmailTests {
 
     @Test("Reply correctly joins parent thread")
     func replyJoinsThread() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
 
@@ -225,7 +225,7 @@ struct InboundEmailTests {
 
     @Test("Orphan reply starts a new thread")
     func orphanReplyStartsNewThread() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
 
@@ -255,7 +255,7 @@ struct InboundEmailTests {
 
     @Test("Email with attachments persists attachment records")
     func emailWithAttachments() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let handler = try await makeHandler(dbService: dbService)
 

@@ -12,7 +12,7 @@ import VaporTesting
 struct CanonicalHostTests {
     @Test("blog post canonical og:url points at www.neonlaw.com")
     func blogPostCanonicalIsDotCom() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",
@@ -37,7 +37,7 @@ struct CanonicalHostTests {
 
     @Test("GET /openapi.yaml lists www.neonlaw.com in servers and not www.neonlaw.org")
     func openAPISpecListsDotComServer() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/openapi.yaml",
@@ -57,7 +57,7 @@ struct CanonicalHostTests {
 
     @Test("apex host neonlaw.com redirects to https://www.neonlaw.com preserving path")
     func apexRedirectsToWWW() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog",
@@ -77,7 +77,7 @@ struct CanonicalHostTests {
 
     @Test("apex root path redirects to https://www.neonlaw.com/")
     func apexRootRedirectsToWWW() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/",

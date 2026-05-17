@@ -42,6 +42,7 @@ let package = Package(
             from: "1.10.3"
         ),
         .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.9.0"),
+        .package(url: "https://github.com/vapor/swift-openapi-vapor.git", from: "1.0.0"),
         .package(url: "https://github.com/soto-project/soto.git", from: "7.3.0"),
         .package(url: "https://github.com/apple/swift-configuration.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "4.0.0"),
@@ -109,6 +110,7 @@ let package = Package(
             name: "NavigatorDatabaseService",
             dependencies: [
                 "NavigatorDAL",
+                .product(name: "Configuration", package: "swift-configuration"),
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentKit", package: "fluent-kit"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
@@ -125,6 +127,7 @@ let package = Package(
                 "NavigatorOIDCMiddleware",
                 "NavigatorDatabaseService",
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "OpenAPIVapor", package: "swift-openapi-vapor"),
                 .product(name: "Queues", package: "queues"),
                 .product(name: "SotoS3", package: "soto"),
                 .product(name: "SotoSES", package: "soto"),
@@ -133,6 +136,7 @@ let package = Package(
                 .product(name: "Elementary", package: "elementary"),
                 .product(name: "VaporElementary", package: "vapor-elementary"),
                 .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "Vapor", package: "vapor"),
             ],
             resources: [
                 .copy("openapi.yaml")
@@ -144,7 +148,9 @@ let package = Package(
         .executableTarget(
             name: "NavigatorApp",
             dependencies: [
+                "NavigatorDatabaseService",
                 "NavigatorWeb",
+                .product(name: "Configuration", package: "swift-configuration"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "VaporElementary", package: "vapor-elementary"),
                 .product(name: "Elementary", package: "elementary"),
@@ -175,7 +181,9 @@ let package = Package(
                 "NavigatorDAL",
                 "NavigatorOIDCMiddleware",
                 "NavigatorRules",
+                .product(name: "Configuration", package: "swift-configuration"),
                 .product(name: "Fluent", package: "fluent"),
+                .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),

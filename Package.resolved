@@ -1,5 +1,5 @@
 {
-  "originHash" : "0c55caf353f6da8d07fc0a1d508bafa69287c57b175e45379d7f91538f56af15",
+  "originHash" : "ff479700328948535804bce34eda10f2e6e2f3ad8294979e5db6c7a09c18a56e",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -413,6 +413,15 @@
       "state" : {
         "revision" : "f039fa6d6338aab5164f3d1be16281524c9a8f89",
         "version" : "1.11.0"
+      }
+    },
+    {
+      "identity" : "swift-openapi-vapor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/swift-openapi-vapor.git",
+      "state" : {
+        "revision" : "b53c1517e889d5479567729fbe143a59da302ffc",
+        "version" : "1.0.1"
       }
     },
     {

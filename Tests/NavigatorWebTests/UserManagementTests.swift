@@ -68,7 +68,7 @@ struct UserManagementTests {
 
     @Test("listUsers returns all users for admin")
     func listUsersAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -99,7 +99,7 @@ struct UserManagementTests {
 
     @Test("listUsers returns 403 for non-admin")
     func listUsersNonAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -122,7 +122,7 @@ struct UserManagementTests {
 
     @Test("listUsers filters by role")
     func listUsersFilterByRole() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -156,7 +156,7 @@ struct UserManagementTests {
 
     @Test("listUsers searches by email substring")
     func listUsersSearchByEmail() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -188,7 +188,7 @@ struct UserManagementTests {
 
     @Test("getUser returns user detail for admin")
     func getUserAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -221,7 +221,7 @@ struct UserManagementTests {
 
     @Test("getUser returns 403 for non-admin")
     func getUserNonAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -240,7 +240,7 @@ struct UserManagementTests {
 
     @Test("getUser returns 404 for unknown ID")
     func getUserNotFound() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -261,7 +261,7 @@ struct UserManagementTests {
 
     @Test("updateUserRole changes role and writes audit row")
     func updateUserRoleHappyPath() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -307,7 +307,7 @@ struct UserManagementTests {
 
     @Test("updateUserRole returns 403 for non-admin")
     func updateUserRoleNonAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -331,7 +331,7 @@ struct UserManagementTests {
 
     @Test("updateUserRole returns 403 when admin demotes themselves")
     func updateUserRoleSelfDemotion() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -360,7 +360,7 @@ struct UserManagementTests {
 
     @Test("updateUserRole returns 404 for unknown user")
     func updateUserRoleNotFound() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -390,7 +390,7 @@ struct UserManagementTests {
 
     @Test("getUserRoleHistory returns audit entries newest-first")
     func getUserRoleHistoryOrder() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -444,7 +444,7 @@ struct UserManagementTests {
 
     @Test("getUserRoleHistory returns 403 for non-admin")
     func getUserRoleHistoryNonAdmin() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -463,7 +463,7 @@ struct UserManagementTests {
 
     @Test("getUserRoleHistory returns 404 for unknown user")
     func getUserRoleHistoryNotFound() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)

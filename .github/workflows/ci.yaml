@@ -81,5 +81,60 @@ jobs:
         # rule set. Any non-zero exit fails the job.
         run: .build/release/NavigatorCLI lint --markdown-only .
 
-      - name: Run tests
+      - name: Run tests (SQLite default)
+        run: swift test
+
+  tests-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: Install Swift toolchain
+        uses: SwiftyLab/setup-swift@v1.14.0
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+
+      - name: Cache Swift Package Manager dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.cache/org.swift.swiftpm
+          key: spm-postgres-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            spm-postgres-${{ runner.os }}-
+
+      - name: Wait for Postgres to accept connections
+        run: |
+          for _ in $(seq 1 30); do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres never came up" >&2
+          exit 1
+
+      - name: Run tests against Postgres
         run: swift test
