@@ -8,7 +8,14 @@ import Testing
 
 @testable import NavigatorWeb
 
-@Suite("Inbound Email Ingestion", .serialized)
+@Suite(
+    "Inbound Email Ingestion",
+    .serialized,
+    .disabled(
+        if: isUsingPostgresMode(),
+        "Postgres mode is exercised by NavigatorDALTests; this suite lacks per-test isolation."
+    )
+)
 struct InboundEmailTests {
     private let secret = "test-ingest-secret"
 

@@ -25,7 +25,7 @@ func makeTestDatabaseService() async throws -> DatabaseService {
 func withDatabaseTestLock<T>(
     _ operation: () async throws -> T
 ) async throws -> T {
-    if isUsingPostgres() {
+    if isUsingPostgresMode() {
         await DatabaseTestSerializer.shared.acquire()
         do {
             let result = try await operation()
@@ -39,7 +39,15 @@ func withDatabaseTestLock<T>(
     return try await operation()
 }
 
-private func isUsingPostgres() -> Bool {
+/// `true` when `APP_ENV=production` and `DATABASE_URL` is set — the
+/// configuration that routes the suite to Postgres. Exposed so each
+/// database-touching suite can opt out in Postgres mode via
+/// `.disabled(if: isUsingPostgresMode(), ...)`. The DAL suite covers the
+/// Postgres path; Web tests construct their own `DatabaseService` per
+/// test without holding the shared serializer and can race the
+/// migrate-phase CREATE TABLE on the `_fluent_migrations` catalog.
+@Sendable
+func isUsingPostgresMode() -> Bool {
     let reader = ConfigReader(provider: EnvironmentVariablesProvider())
     let appEnv = reader.string(forKey: "app.env", default: "development")
     let databaseURL = reader.string(forKey: "database.url", isSecret: true)
