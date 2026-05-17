@@ -16,7 +16,13 @@ import Vapor
 /// `inserted_at` / `updated_at` is the codebase convention — `created_at` is
 /// the Fluent default we deliberately don't use, so seeing it appear means
 /// someone forgot to specify the key on `@Timestamp(...)`.
-@Suite("Timestamp invariants")
+@Suite(
+    "Timestamp invariants",
+    .disabled(
+        if: isUsingPostgresMode(),
+        "Schema introspection uses SQLite's PRAGMA; needs Postgres equivalent."
+    )
+)
 struct TimestampInvariantTests {
 
     @Test("Every table has inserted_at and updated_at and no created_at")

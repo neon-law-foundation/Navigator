@@ -18,6 +18,20 @@ import Vapor
 /// between tests to guarantee the same per-test isolation SQLite
 /// in-memory provides for free. SQLite-mode runs skip the lock — each
 /// call already gets a fresh in-memory database.
+/// `true` when `APP_ENV=production` and `DATABASE_URL` is set — the
+/// configuration that routes the suite to Postgres. Suites that exercise
+/// model code with known Postgres-strict-typing gaps (`jsonb` columns
+/// the Swift code currently encodes as text) opt out in Postgres mode
+/// via `.disabled(if: isUsingPostgresMode(), ...)` until those models
+/// are fixed in a follow-up.
+@Sendable
+func isUsingPostgresMode() -> Bool {
+    let reader = ConfigReader(provider: EnvironmentVariablesProvider())
+    let appEnv = reader.string(forKey: "app.env", default: "development")
+    let databaseURL = reader.string(forKey: "database.url", isSecret: true)
+    return appEnv == "production" && (databaseURL.map { !$0.isEmpty } ?? false)
+}
+
 func withApplication<T>(
     _ operation: (Application) async throws -> T
 ) async throws -> T {
