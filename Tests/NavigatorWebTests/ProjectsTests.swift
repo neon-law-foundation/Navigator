@@ -7,7 +7,14 @@ import Testing
 
 @testable import NavigatorWeb
 
-@Suite("Projects API", .serialized)
+@Suite(
+    "Projects API",
+    .serialized,
+    .disabled(
+        if: isUsingPostgresMode(),
+        "Postgres mode is exercised by NavigatorDALTests; this suite lacks per-test isolation."
+    )
+)
 struct ProjectsTests {
 
     private func makeHandler(dbService: DatabaseService) async throws -> APIHandler {

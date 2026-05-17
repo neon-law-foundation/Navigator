@@ -8,7 +8,14 @@ import Testing
 
 @testable import NavigatorWeb
 
-@Suite("Authorization", .serialized)
+@Suite(
+    "Authorization",
+    .serialized,
+    .disabled(
+        if: isUsingPostgresMode(),
+        "Postgres mode is exercised by NavigatorDALTests; this suite lacks per-test isolation."
+    )
+)
 struct AuthorizationTests {
 
     private func createTestUser(

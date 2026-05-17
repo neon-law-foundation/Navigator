@@ -6,7 +6,14 @@ import Testing
 
 @testable import NavigatorWeb
 
-@Suite("NLF API Tests", .serialized)
+@Suite(
+    "NLF API Tests",
+    .serialized,
+    .disabled(
+        if: isUsingPostgresMode(),
+        "Postgres mode is exercised by NavigatorDALTests; this suite lacks per-test isolation."
+    )
+)
 struct AppTests {
     @Test("listQuestions returns a successful response for admin")
     func listQuestionsReturnsOkForAdmin() async throws {
