@@ -74,9 +74,20 @@ public func routes(_ app: Application) throws {
         return HTMLResponse { BlogPostPage(brand: brand, post: post) }
     }
 
-    // Health check for CI / load balancers.
-    app.get("health") { _ in
-        "ok"
+    // Readiness signal for orchestrators and load balancers. Returns 200
+    // only when the database round-trips a query; failures surface as 503
+    // so a rotating deployment can drain unhealthy tasks.
+    app.get("health") { req -> Response in
+        guard let databaseService = req.application.databaseService else {
+            return Response(status: .serviceUnavailable, body: .init(string: "database unavailable"))
+        }
+        do {
+            _ = try await databaseService.healthCheck()
+            return Response(status: .ok, body: .init(string: "ok"))
+        } catch {
+            req.logger.error("database health check failed: \(error)")
+            return Response(status: .serviceUnavailable, body: .init(string: "database unavailable"))
+        }
     }
 
     // Publish the OpenAPI contract verbatim so external clients can

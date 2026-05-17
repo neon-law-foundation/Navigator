@@ -8,7 +8,7 @@ import VaporTesting
 struct RouteTests {
     @Test("GET / returns 200 and contains the brand marker")
     func homepageReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/",
@@ -26,7 +26,7 @@ struct RouteTests {
 
     @Test("GET / hero names the dual mission and links to the workshop")
     func homepageHeroPointsAtWorkshop() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/",
@@ -47,7 +47,7 @@ struct RouteTests {
 
     @Test("GET /about returns 200")
     func aboutReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/about",
@@ -61,7 +61,7 @@ struct RouteTests {
 
     @Test("GET /education returns 200 with all three courses")
     func educationReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/education",
@@ -77,7 +77,7 @@ struct RouteTests {
 
     @Test("GET /workshops/genai-training renders the Claude Code workshop landing page")
     func workshopsLandingReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/genai-training",
@@ -117,7 +117,7 @@ struct RouteTests {
 
     @Test("GET /workshops 301-redirects to the canonical workshop landing page")
     func workshopsBareSlugRedirects() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops",
@@ -134,7 +134,7 @@ struct RouteTests {
 
     @Test("GET /workshops/genai-training/readme renders the copy-card runbook page")
     func workshopRunbookMaterialPageReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/genai-training/readme",
@@ -162,7 +162,7 @@ struct RouteTests {
 
     @Test("GET /workshops/genai-training/personas renders the copy-card personas page")
     func workshopPersonasMaterialPageReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/genai-training/personas",
@@ -183,7 +183,7 @@ struct RouteTests {
 
     @Test("GET /workshops/genai-training/operating-agreement renders the copy-card OA page")
     func workshopOperatingAgreementMaterialPageReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/genai-training/operating-agreement",
@@ -204,7 +204,7 @@ struct RouteTests {
 
     @Test("GET /workshops/genai-training/nope returns 404 for an unknown slug")
     func workshopUnknownSlugReturns404() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/genai-training/nope",
@@ -217,7 +217,7 @@ struct RouteTests {
 
     @Test("GET /workshops/claude-code-zodiac/README.md serves the participant runbook")
     func workshopRunbookIsServed() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/workshops/claude-code-zodiac/README.md",
@@ -232,7 +232,7 @@ struct RouteTests {
 
     @Test("GET /navigator returns 200 with core components")
     func navigatorReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/navigator",
@@ -248,7 +248,7 @@ struct RouteTests {
 
     @Test("GET /privacy returns 200")
     func privacyReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/privacy",
@@ -262,7 +262,7 @@ struct RouteTests {
 
     @Test("GET /terms returns 200")
     func termsReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/terms",
@@ -276,7 +276,7 @@ struct RouteTests {
 
     @Test("GET /contact returns 200")
     func contactReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/contact",
@@ -290,7 +290,7 @@ struct RouteTests {
 
     @Test("GET /health returns ok")
     func healthReturnsOk() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/health",

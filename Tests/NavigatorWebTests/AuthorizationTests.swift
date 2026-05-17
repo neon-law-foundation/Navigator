@@ -60,7 +60,7 @@ struct AuthorizationTests {
 
     @Test("Missing Authorization header returns 401")
     func missingAuthHeader() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let middleware = try await makeMiddleware(dbService: dbService)
         let status = try await callMiddleware(middleware)
@@ -70,7 +70,7 @@ struct AuthorizationTests {
 
     @Test("Invalid Bearer token returns 401")
     func invalidBearerToken() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let middleware = try await makeMiddleware(dbService: dbService)
         let status = try await callMiddleware(middleware, authorization: "Bearer not.a.valid.token")
@@ -80,7 +80,7 @@ struct AuthorizationTests {
 
     @Test("Unknown sub returns 401")
     func unknownSub() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let middleware = try await makeMiddleware(dbService: dbService)
         let token = TestJWT.token(sub: "unknown-sub")
@@ -91,7 +91,7 @@ struct AuthorizationTests {
 
     @Test("Client user passes through")
     func clientRole() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let sub = "client-sub"
         try await createTestUser(dbService, sub: sub, role: .client)
@@ -104,7 +104,7 @@ struct AuthorizationTests {
 
     @Test("Staff user passes through")
     func staffRole() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let sub = "staff-sub"
         try await createTestUser(dbService, sub: sub, role: .staff)
@@ -117,7 +117,7 @@ struct AuthorizationTests {
 
     @Test("Admin user passes through")
     func adminRole() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let sub = "admin-sub"
         try await createTestUser(dbService, sub: sub, role: .admin)
@@ -130,7 +130,7 @@ struct AuthorizationTests {
 
     @Test("Sub whose base64url payload contains underscore decodes correctly")
     func base64URLUnderscoreInPayload() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         // "abc?def" JSON-encodes to a base64url payload containing '_'; verifies
         // the base64URL → base64 conversion replaces '_' with '/' (not vice versa).

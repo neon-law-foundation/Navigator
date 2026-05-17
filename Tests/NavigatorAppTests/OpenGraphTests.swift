@@ -8,7 +8,7 @@ import VaporTesting
 struct OpenGraphTests {
     @Test("blog post page emits article-typed Open Graph tags with the canonical URL")
     func blogPostEmitsArticleOG() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",
@@ -31,7 +31,7 @@ struct OpenGraphTests {
 
     @Test("blog index page emits website-typed Open Graph tags with the /blog canonical URL")
     func blogIndexEmitsWebsiteOG() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog",
@@ -48,7 +48,7 @@ struct OpenGraphTests {
 
     @Test("every blog post advertises the SVG logo first, then the PNG fallback")
     func blogPostAdvertisesLogoImages() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",
@@ -76,7 +76,7 @@ struct OpenGraphTests {
 
     @Test("Twitter card uses the PNG logo because X does not render SVG previews")
     func twitterCardUsesPNG() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",
@@ -97,7 +97,7 @@ struct OpenGraphTests {
 
     @Test("no published-time or article-time metadata is emitted")
     func noTimestampMetadata() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",

@@ -94,7 +94,7 @@ struct ProjectsTests {
 
     @Test("Admin receives all seeded projects")
     func adminSeesAllProjects() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -130,7 +130,7 @@ struct ProjectsTests {
 
     @Test("Staff receives only their assigned project")
     func staffSeesOnlyAssignedProject() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -163,7 +163,7 @@ struct ProjectsTests {
 
     @Test("Client receives only their assigned project")
     func clientSeesOnlyAssignedProject() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 
@@ -200,7 +200,7 @@ struct ProjectsTests {
 
     @Test("No authenticatedUser returns 401")
     func missingAuthenticatedUserReturns401() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -218,7 +218,7 @@ struct ProjectsTests {
 
     @Test("getProject returns 404 for unknown ID")
     func getProjectReturns404ForUnknownID() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
 
         let handler = try await makeHandler(dbService: dbService)
@@ -237,7 +237,7 @@ struct ProjectsTests {
 
     @Test("createProject returns 403 for client role")
     func createProjectReturns403ForClient() async throws {
-        let dbService = DatabaseService(configuration: .memory)
+        let dbService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await dbService.migrate()
         let db = try await dbService.db
 

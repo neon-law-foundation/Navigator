@@ -136,7 +136,7 @@ struct AppTests {
     // MARK: - Helpers
 
     private func makeHandler() async throws -> (APIHandler, DatabaseService) {
-        let databaseService = DatabaseService(configuration: .memory)
+        let databaseService = (try DatabaseService.fromEnvironment(defaultSQLitePath: ":memory:"))
         try await databaseService.migrate()
         let db = try await databaseService.db
         let handler = APIHandler(

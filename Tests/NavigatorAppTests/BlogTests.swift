@@ -8,7 +8,7 @@ import VaporTesting
 struct BlogTests {
     @Test("GET /blog lists the hello-world post")
     func indexListsPost() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog",
@@ -24,7 +24,7 @@ struct BlogTests {
     @Test("GET /blog renders posts in alphabetical order by title")
     func indexSortsAlphabetically() async throws {
         let titles = try BlogLoader.loadAll().map(\.title)
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog",
@@ -46,7 +46,7 @@ struct BlogTests {
 
     @Test("GET /blog/hello-world renders the post body")
     func postPageRendersBody() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/hello-world",
@@ -60,7 +60,7 @@ struct BlogTests {
 
     @Test("GET /blog/nonexistent returns 404")
     func unknownSlugIs404() async throws {
-        try await withApp(configure: configure) { app in
+        try await withApp(configure: testConfigure) { app in
             try await app.testing().test(
                 .GET,
                 "/blog/this-post-does-not-exist",

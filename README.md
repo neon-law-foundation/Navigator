@@ -402,6 +402,45 @@ Build the project:
 swift build
 ```
 
+### Runtime configuration
+
+`NavigatorApp` reads every runtime knob through
+[`swift-configuration`](https://github.com/apple/swift-configuration) and
+its environment-variables provider:
+
+| Variable | Default | Purpose |
+| -------- | ------- | ------- |
+| `APP_ENV` | `development` | Selects the database driver. `production` requires `DATABASE_URL`; any other value picks SQLite. |
+| `DATABASE_URL` | _(unset)_ | Postgres connection URL (`postgres://user:pass@host:5432/db`). Required when `APP_ENV=production`. |
+| `NAVIGATOR_DB_PATH` | `navigator.sqlite` | SQLite file path used outside production. Pass `:memory:` for an ephemeral database. |
+| `PORT` | `3001` | TCP port the HTTP server binds to. |
+
+In production the boot sequence is:
+
+1. Read `APP_ENV`, `DATABASE_URL`, `NAVIGATOR_DB_PATH`, `PORT` via
+   `AppConfiguration.fromEnvironment()`.
+2. Construct a `DatabaseService` for the selected driver and run
+   `migrate()` before the listener accepts traffic.
+3. Mount the JSON API generated from `openapi.yaml` under `/api/...`.
+4. Expose `/health`, which returns `200 ok` only when
+   `DatabaseService.healthCheck()` round-trips a query; failures return
+   `503 service unavailable` so orchestrators can drain the task.
+
+### Running tests against a local Postgres
+
+The default `swift test` invocation uses an isolated SQLite in-memory
+database for every test. To rehearse the same suite against the
+production-flavored Postgres path:
+
+```bash
+./scripts/test-postgres.sh
+```
+
+The script boots a disposable `postgres:16` Docker container, exports
+`APP_ENV=production` and a `DATABASE_URL` pointed at the container, runs
+`swift test`, and tears the container down — pass or fail. It
+reproduces the `tests-postgres` CI job byte-for-byte.
+
 ## Platform Support
 
 NavigatorCLI supports **macOS and Linux only**. Windows is not currently supported.
