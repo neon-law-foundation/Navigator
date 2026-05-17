@@ -179,6 +179,7 @@ let package = Package(
             name: "NavigatorDALTests",
             dependencies: [
                 "NavigatorDAL",
+                "NavigatorDatabaseService",
                 "NavigatorOIDCMiddleware",
                 "NavigatorRules",
                 .product(name: "Configuration", package: "swift-configuration"),
