@@ -1,10 +1,8 @@
 /// A minimal project view-model consumed by workshop sidebar components.
 ///
-/// Introduced in Milestone 2 step 3 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) as a temporary stub. The real shape — with
-/// document counts, owners, and status — will arrive in a later milestone
-/// when the full workshop UI is ported. Fields are intentionally minimal:
-/// just what `ProjectSidebar` needs to render a link list.
+/// Fields are intentionally minimal: just what `ProjectSidebar` needs to
+/// render a link list. A richer shape — with document counts, owners, and
+/// status — can grow here as the workshop UI does.
 ///
 /// Named `WebProject` rather than `Project` to avoid collision with the
 /// `NavigatorDAL.Project` Fluent model already imported by this module's

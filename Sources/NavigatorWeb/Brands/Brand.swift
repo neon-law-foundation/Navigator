@@ -1,8 +1,8 @@
 /// A Trifecta brand configuration consumed by white-labelled UI components.
 ///
-/// The three concrete brands — `NLFBrand`, `NeonLawBrand`, `SagebrushBrand` —
-/// ship in this module. Additional brands can conform by providing their own
-/// values; components never branch on brand identity, they read properties.
+/// The two concrete brands — `NLFBrand` and `NeonLawBrand` — ship in this
+/// module. Additional brands can conform by providing their own values;
+/// components never branch on brand identity, they read properties.
 ///
 /// Values are intentionally primitive (`String`, `[NavLink]`) so that this
 /// module can be used from both server-rendered templates (Elementary) and
@@ -59,30 +59,6 @@ public struct NeonLawBrand: Brand {
         NavLink(label: "Estate Planning", href: "/estate-planning"),
         NavLink(label: "Practice Areas", href: "/practice-areas"),
         NavLink(label: "Attorneys", href: "/attorneys"),
-        NavLink(label: "Blog", href: "/blog"),
-        NavLink(label: "Contact", href: "/contact"),
-    ]
-    public let footerLinks: [FooterLink] = [
-        FooterLink(label: "Privacy", href: "/privacy"),
-        FooterLink(label: "Terms", href: "/terms"),
-        FooterLink(label: "Contact", href: "/contact"),
-    ]
-
-    public init() {}
-}
-
-/// Sagebrush brand — corporate services & trust at sagebrush.services.
-///
-/// Primary color is goldenrod `#DAA520`, matching the pre-cutover
-/// `sagebrush-services/Web/src/lib/brand.ts` value used across CTAs,
-/// service-card accents, and the contact link.
-public struct SagebrushBrand: Brand {
-    public let name: String = "Sagebrush"
-    public let primaryColor: String = "#DAA520"
-    public let logoPath: String = "/logo.svg"
-    public let navLinks: [NavLink] = [
-        NavLink(label: "Services", href: "/services"),
-        NavLink(label: "Trust", href: "/trust"),
         NavLink(label: "Blog", href: "/blog"),
         NavLink(label: "Contact", href: "/contact"),
     ]

@@ -1053,11 +1053,13 @@ extension NavigatorDALConfiguration {
             entityID = nil
         }
 
+        let storedValue = JSONStored(value)
+
         if !lookupFields.isEmpty {
             var query = Answer.query(on: database)
                 .filter(\.$question.$id == questionID)
                 .filter(\.$person.$id == personID)
-                .filter(\.$value == value)
+                .filter(\.$value == storedValue)
             if let eid = entityID {
                 query = query.filter(\.$entity.$id == eid)
             }
@@ -1068,7 +1070,7 @@ extension NavigatorDALConfiguration {
         answer.$question.id = questionID
         answer.$person.id = personID
         answer.$entity.id = entityID
-        answer.value = value
+        answer.value = storedValue
         try await answer.save(on: database)
     }
 

@@ -4,9 +4,8 @@ import Queues
 ///
 /// The first concrete consumer of ``NavigatorJob``. Default exponential
 /// backoff (5s, ×2, no cap) governs retry timing. Total attempt count is
-/// set per-dispatch via `JobData.maxRetryCount` — call sites that enqueue
-/// production email should pass `maxRetryCount: 5` to match the rollout
-/// contract in sagebrush-services/Web#34.
+/// set per-dispatch via `JobData.maxRetryCount`; production senders
+/// typically pass `maxRetryCount: 5`.
 ///
 /// Brand apps register one instance per process at boot:
 ///

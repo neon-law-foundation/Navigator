@@ -1,15 +1,9 @@
 /// A single step in a `WorkshopTour`.
 ///
-/// The shape mirrors the subset of React Joyride's `Step` interface that
-/// the archived NLF/WebComponents library exposed, so callers migrating
-/// tours from the TypeScript side do not need to re-key their data.
-///
-/// Introduced in Milestone 2 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) as part of the `WorkshopTour` stub. The
-/// Swift-side tour currently renders only a static list of steps; the
+/// `WorkshopTour` currently renders only a static list of steps; the
 /// fields `placement` and `disableBeacon` are preserved on the model so
-/// the full guided-tour UX (deferred from M2) can light up without a
-/// breaking API change.
+/// the full guided-tour UX can light up later without a breaking API
+/// change.
 public struct TourStep: Sendable, Equatable, Codable {
     /// Tooltip placement relative to `target`.
     public enum Placement: String, Sendable, Equatable, Codable {

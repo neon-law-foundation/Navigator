@@ -31,6 +31,18 @@ Pure-Swift legal-standards library plus a Vapor-served public website.
 See `Package.swift` for the module graph and `README.md` for the
 quick-start.
 
+## Data Layer — Fluent only, no raw SQL
+
+All database access goes through Fluent. **Do not write raw SQL** — no
+`sql.raw(...)` calls, no `SQLDatabase` dialect branches, no engine-specific
+features (Postgres `@>` / GIN / partial indexes, SQLite `PRAGMA` /
+`sqlite_master`). Migrations use Fluent's portable schema builder; queries
+use Fluent's query builder; JSON-typed columns use the `JSONStored<T>`
+wrapper so encoding is identical on SQLite and Postgres. If a feature can
+only be expressed in engine-specific SQL, drop the feature rather than
+adding the SQL — the code path must look the same regardless of which
+backend is configured.
+
 ## Targets
 
 - **Library** modules expose the legal standards, rules, data layer, and

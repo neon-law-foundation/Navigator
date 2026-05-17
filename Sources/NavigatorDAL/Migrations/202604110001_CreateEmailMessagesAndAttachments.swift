@@ -1,5 +1,4 @@
 import FluentKit
-import SQLKit
 
 struct CreateEmailMessagesAndAttachments: AsyncMigration {
     func prepare(on database: any Database) async throws {
@@ -40,43 +39,9 @@ struct CreateEmailMessagesAndAttachments: AsyncMigration {
             .field("inserted_at", .datetime, .required)
             .field("updated_at", .datetime, .required)
             .create()
-
-        guard let sql = database as? SQLDatabase else { return }
-
-        try await sql.raw(
-            "CREATE INDEX email_messages_thread_id_idx ON email_messages (thread_id)"
-        ).run()
-        try await sql.raw(
-            "CREATE INDEX email_messages_in_reply_to_idx ON email_messages (in_reply_to)"
-        ).run()
-        try await sql.raw(
-            """
-            CREATE INDEX email_messages_to_received_idx
-            ON email_messages (to_address, received_at DESC)
-            """
-        ).run()
-        try await sql.raw(
-            "CREATE INDEX email_attachments_email_message_id_idx ON email_attachments (email_message_id)"
-        ).run()
-
-        let isPostgres = sql.dialect.name == "postgresql"
-        guard isPostgres else { return }
-        try await sql.raw(
-            """
-            CREATE INDEX email_messages_references_gin
-            ON email_messages USING GIN ("references" jsonb_path_ops)
-            """
-        ).run()
     }
 
     func revert(on database: any Database) async throws {
-        if let sql = database as? SQLDatabase {
-            try await sql.raw("DROP INDEX IF EXISTS email_attachments_email_message_id_idx").run()
-            try await sql.raw("DROP INDEX IF EXISTS email_messages_references_gin").run()
-            try await sql.raw("DROP INDEX IF EXISTS email_messages_to_received_idx").run()
-            try await sql.raw("DROP INDEX IF EXISTS email_messages_in_reply_to_idx").run()
-            try await sql.raw("DROP INDEX IF EXISTS email_messages_thread_id_idx").run()
-        }
         try await database.schema(EmailAttachment.schema).delete()
         try await database.schema(EmailMessage.schema).delete()
     }

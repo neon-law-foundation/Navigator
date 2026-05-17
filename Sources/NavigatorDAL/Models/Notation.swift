@@ -66,17 +66,20 @@ public final class Notation: Model, @unchecked Sendable {
 
     /// The append-only history of workflow transitions for this notation.
     ///
-    /// Current state is `stateHistory.last?.toState`. A notation is closed when
-    /// `stateHistory.last?.toState == "END"`. An empty history means no transitions
-    /// have been recorded yet.
+    /// Current state is `stateHistory.value.last?.toState`. A notation is closed
+    /// when `stateHistory.value.last?.toState == "END"`. An empty history means
+    /// no transitions have been recorded yet. The ``JSONStored`` wrapper routes
+    /// encoding through PostgresKit's JSON path so the array is persisted as a
+    /// single JSONB document on both engines.
     @Field(key: "state_history")
-    public var stateHistory: [NotationEvent]
+    public var stateHistory: JSONStored<[NotationEvent]>
 
     /// Questionnaire answers collected at notation creation time, keyed by question code.
     ///
-    /// Maps question code to Answer row UUID. Question codes are unique across the questions table.
+    /// Maps question code to Answer row UUID. Question codes are unique across the
+    /// questions table. Access the dictionary via `answers.value`.
     @Field(key: "answers")
-    public var answers: [String: UUID]
+    public var answers: JSONStored<[String: UUID]>
 
     /// The template markdown with questionnaire answers interpolated.
     ///
@@ -94,8 +97,8 @@ public final class Notation: Model, @unchecked Sendable {
 
     /// Creates a new notation instance.
     public init() {
-        self.stateHistory = []
-        self.answers = [:]
+        self.stateHistory = JSONStored([])
+        self.answers = JSONStored([:])
     }
 
     /// Validates that the notation has the correct person and entity IDs based on the template's respondent type.
@@ -172,63 +175,7 @@ public final class Notation: Model, @unchecked Sendable {
             query = query.filter(\.$entity.$id == nil)
         }
 
-        guard let sql = database as? SQLDatabase else {
-            let notations = try await query.all()
-            return notations.contains { $0.stateHistory.last?.toState != "END" }
-        }
-
-        let isPostgres = sql.dialect.name == "postgresql"
-        let activeFilter =
-            isPostgres
-            ? "state_history->-1->>'toState' != 'END'"
-            : "json_extract(state_history, '$[#-1].toState') != 'END'"
-
-        struct FoundRow: Decodable { let found: Int }
-
-        if let pid = personID, let eid = entityID {
-            return try await sql.raw(
-                """
-                SELECT 1 AS found FROM notations
-                WHERE template_id = \(bind: templateID)
-                AND person_id = \(bind: pid)
-                AND entity_id = \(bind: eid)
-                AND \(unsafeRaw: activeFilter)
-                LIMIT 1
-                """
-            ).first(decoding: FoundRow.self) != nil
-        } else if let pid = personID {
-            return try await sql.raw(
-                """
-                SELECT 1 AS found FROM notations
-                WHERE template_id = \(bind: templateID)
-                AND person_id = \(bind: pid)
-                AND entity_id IS NULL
-                AND \(unsafeRaw: activeFilter)
-                LIMIT 1
-                """
-            ).first(decoding: FoundRow.self) != nil
-        } else if let eid = entityID {
-            return try await sql.raw(
-                """
-                SELECT 1 AS found FROM notations
-                WHERE template_id = \(bind: templateID)
-                AND person_id IS NULL
-                AND entity_id = \(bind: eid)
-                AND \(unsafeRaw: activeFilter)
-                LIMIT 1
-                """
-            ).first(decoding: FoundRow.self) != nil
-        } else {
-            return try await sql.raw(
-                """
-                SELECT 1 AS found FROM notations
-                WHERE template_id = \(bind: templateID)
-                AND person_id IS NULL
-                AND entity_id IS NULL
-                AND \(unsafeRaw: activeFilter)
-                LIMIT 1
-                """
-            ).first(decoding: FoundRow.self) != nil
-        }
+        let notations = try await query.all()
+        return notations.contains { $0.stateHistory.value.last?.toState != "END" }
     }
 }

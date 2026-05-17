@@ -65,18 +65,14 @@ struct PublicSurfaceTests {
         #expect(user.email == "nick@example.com")
     }
 
-    @Test("All three brands are public and instantiable")
+    @Test("Both brands are public and instantiable")
     func brandsSurface() {
         let nlf: any Brand = NLFBrand()
         let neonlaw: any Brand = NeonLawBrand()
-        let sagebrush: any Brand = SagebrushBrand()
         #expect(nlf.name == "Neon Law Foundation")
         #expect(neonlaw.name == "Neon Law")
-        #expect(sagebrush.name == "Sagebrush")
         // NLF primary color is the cyan-700 teal that matches the logo (#0e7490).
         #expect(nlf.primaryColor == "#0e7490")
-        // Sagebrush primary color is goldenrod (#DAA520), not the old #0891b2 placeholder.
-        #expect(sagebrush.primaryColor == "#DAA520")
     }
 
     @Test("NeonLawBrand nav exposes the estate-planning referral page")
@@ -89,7 +85,7 @@ struct PublicSurfaceTests {
     func siteHeaderSurface() {
         _ = SiteHeader(brand: NLFBrand(), authUser: nil)
         _ = SiteHeader(
-            brand: SagebrushBrand(),
+            brand: NeonLawBrand(),
             authUser: WebUser(id: "u", displayName: "N", email: "n@e.com")
         )
     }

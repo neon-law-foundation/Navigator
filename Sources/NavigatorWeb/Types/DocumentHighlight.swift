@@ -9,10 +9,6 @@
 /// Highlights are ignored for PDFs because iframe content is not
 /// addressable by offset; callers should pass an empty array or `nil` in
 /// that case.
-///
-/// Introduced in Milestone 2 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) when porting `DocumentViewer` from the
-/// archived NLF/WebComponents React library.
 public struct DocumentHighlight: Sendable, Equatable, Codable {
     /// Inclusive start offset into the file's content string.
     public let start: Int

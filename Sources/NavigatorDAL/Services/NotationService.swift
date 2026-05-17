@@ -96,8 +96,8 @@ public actor NotationService {
         notation.$entity.id = entityID
 
         let initialEvent = try makeInitialEvent(from: template)
-        notation.stateHistory = [initialEvent]
-        notation.answers = answers
+        notation.stateHistory = JSONStored([initialEvent])
+        notation.answers = JSONStored(answers)
         notation.renderedContent = renderedContent
 
         try await notation.validate(on: database)
@@ -168,17 +168,17 @@ public actor NotationService {
             throw NotationError.notationNotFound(notationID)
         }
 
-        if notation.stateHistory.last?.toState == "END" {
+        if notation.stateHistory.value.last?.toState == "END" {
             throw NotationError.closedNotation(notationID)
         }
 
-        let currentState = notation.stateHistory.last?.toState ?? "BEGIN"
+        let currentState = notation.stateHistory.value.last?.toState ?? "BEGIN"
         guard currentState == fromState else {
             throw NotationError.fromStateMismatch(expected: currentState, provided: fromState)
         }
 
         try await notation.$template.load(on: database)
-        let workflow = notation.template.workflow
+        let workflow = notation.template.workflow.value
 
         guard let transitions = workflow[fromState] else {
             throw NotationError.invalidTransition(fromState: fromState, condition: condition)
@@ -200,7 +200,7 @@ public actor NotationService {
             note: note
         )
 
-        notation.stateHistory = notation.stateHistory + [event]
+        notation.stateHistory = JSONStored(notation.stateHistory.value + [event])
         try await notation.save(on: database)
 
         return notation
@@ -209,7 +209,7 @@ public actor NotationService {
     // MARK: - Private helpers
 
     private func makeInitialEvent(from template: Template) throws -> NotationEvent {
-        let beginTransitions = template.workflow["BEGIN"] ?? [:]
+        let beginTransitions = template.workflow.value["BEGIN"] ?? [:]
         let toState: String
         if let explicit = beginTransitions["_"] {
             toState = explicit

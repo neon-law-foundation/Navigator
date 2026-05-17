@@ -28,7 +28,6 @@ func printUsage() {
                               Converts '-' bullet lists to '*', wraps at 120 chars, trims whitespace
           glossary [term]     Print canonical definitions for all Navigator terms
                               Pass an optional term name to look up a single definition
-          ddl                 Print CREATE TABLE statements for all schema tables
           list questions      List all seeded questions with their prompts
           list jurisdictions  List all seeded jurisdictions with their types
           list templates      List all seeded notation templates with their titles
@@ -63,7 +62,6 @@ func printUsage() {
           navigator format nevada.md
           navigator glossary
           navigator glossary Notation
-          navigator ddl
           navigator list questions
           navigator list jurisdictions
           navigator list templates
@@ -157,9 +155,6 @@ Task {
         case "glossary":
             let term = arguments.count > 2 ? arguments[2] : nil
             command = GlossaryCommand(term: term)
-
-        case "ddl":
-            command = DDLCommand()
 
         case "list":
             let subCommand = arguments.count > 2 ? arguments[2] : ""

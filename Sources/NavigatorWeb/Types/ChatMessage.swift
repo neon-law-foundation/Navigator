@@ -1,13 +1,8 @@
 /// A single message in a `ChatInterface` conversation.
 ///
-/// Mirrors the shape returned by NLF/API's `POST /projects/{id}/chat`.
 /// User messages have `role == .user` and no citations; assistant replies
 /// have `role == .assistant` and may include a list of `Citation`s drawn
 /// from the files passed as context.
-///
-/// Introduced in Milestone 2 of the pure-Swift web stack migration
-/// (sagebrush-services/AWS#112) when porting `ChatInterface` from the
-/// archived NLF/WebComponents React library.
 public struct ChatMessage: Sendable, Equatable, Codable {
     /// Who authored the message.
     public enum Role: String, Sendable, Equatable, Codable {

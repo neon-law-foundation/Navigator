@@ -141,42 +141,6 @@ struct SeedLoadingTests {
                 .filter(\.$name == "Nicholas Shook")
                 .first()
             #expect(nicholasShook != nil, "Nicholas Shook entity not found")
-
-            // Verify Sagebrush Services LLC
-            let sagebrush = try await Entity.query(on: app.db)
-                .filter(\.$name == "Sagebrush Services LLC")
-                .first()
-            #expect(sagebrush != nil, "Sagebrush Services LLC not found")
-        }
-    }
-
-    @Test("Sagebrush Services address loads correctly")
-    func testSagebrushAddress() async throws {
-        try await withApplication { app in
-            _ = try await NavigatorDALConfiguration.runSeeds(
-                on: app.db,
-                logger: app.logger
-            )
-
-            // Find Sagebrush Services LLC
-            let sagebrush = try await Entity.query(on: app.db)
-                .filter(\.$name == "Sagebrush Services LLC")
-                .first()
-
-            #expect(sagebrush != nil, "Sagebrush Services LLC not found")
-
-            // Find its address
-            let address = try await Address.query(on: app.db)
-                .filter(\.$entity.$id == sagebrush!.id!)
-                .first()
-
-            #expect(address != nil, "Sagebrush address not found")
-            #expect(address?.street == "405 Mae Anne Ave Ste 405-9004")
-            #expect(address?.city == "Reno")
-            #expect(address?.state == "NV")
-            #expect(address?.zip == "89523")
-            #expect(address?.country == "USA")
-            #expect(address?.isVerified == true)
         }
     }
 
@@ -367,20 +331,19 @@ struct SeedLoadingTests {
                 logger: app.logger
             )
 
-            // Find Sagebrush address
-            let sagebrush = try await Entity.query(on: app.db)
-                .filter(\.$name == "Sagebrush Services LLC")
+            let shookLaw = try await Entity.query(on: app.db)
+                .filter(\.$name == "Shook Law LLC")
                 .first()
 
-            #expect(sagebrush != nil, "Sagebrush not found")
+            #expect(shookLaw != nil, "Shook Law LLC not found")
 
             let address = try await Address.query(on: app.db)
-                .filter(\.$entity.$id == sagebrush!.id!)
+                .filter(\.$entity.$id == shookLaw!.id!)
                 .with(\.$entity)
                 .first()
 
-            #expect(address != nil, "Sagebrush address not found")
-            #expect(address?.entity?.name == "Sagebrush Services LLC", "Address not linked to correct entity")
+            #expect(address != nil, "Shook Law LLC address not found")
+            #expect(address?.entity?.name == "Shook Law LLC", "Address not linked to correct entity")
         }
     }
 }

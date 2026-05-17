@@ -288,8 +288,8 @@ struct APIHandler: APIProtocol {
                 title: template.title,
                 description: template.description,
                 respondentType: template.respondentType.rawValue,
-                flowStateCount: template.questionnaire.count,
-                alignmentStateCount: template.workflow.count
+                flowStateCount: template.questionnaire.value.count,
+                alignmentStateCount: template.workflow.value.count
             )
         }
         return .ok(.init(body: .json(summaries)))
@@ -336,7 +336,7 @@ struct APIHandler: APIProtocol {
         let personID: UUID? = bodyPersonID ?? user.person.id
         let entityID: UUID? = bodyEntityID
 
-        let beginTransitions = template.questionnaire["BEGIN"] ?? [:]
+        let beginTransitions = template.questionnaire.value["BEGIN"] ?? [:]
         let firstState: String
         if let explicit = beginTransitions["_"] {
             firstState = explicit
@@ -358,7 +358,7 @@ struct APIHandler: APIProtocol {
         notation.$template.id = templateID
         notation.$person.id = personID
         notation.$entity.id = entityID
-        notation.stateHistory = [initialEvent]
+        notation.stateHistory = JSONStored([initialEvent])
         try await notation.save(on: db)
 
         let instance = try await buildFlowInstance(notation: notation, template: template, db: db)
@@ -468,7 +468,7 @@ struct APIHandler: APIProtocol {
         case .json(let b): body = b
         }
 
-        let currentState = notation.stateHistory.last?.toState ?? "BEGIN"
+        let currentState = notation.stateHistory.value.last?.toState ?? "BEGIN"
         guard currentState == body.stateID else {
             return .undocumented(statusCode: 422, .init())
         }
@@ -476,7 +476,7 @@ struct APIHandler: APIProtocol {
             return .undocumented(statusCode: 422, .init())
         }
 
-        let questionnaire = template.questionnaire
+        let questionnaire = template.questionnaire.value
         guard let transitions = questionnaire[currentState] else {
             return .undocumented(statusCode: 422, .init())
         }
@@ -519,13 +519,13 @@ struct APIHandler: APIProtocol {
             answer.$question.id = try question.requireID()
             answer.$person.id = personID
             answer.$entity.id = notation.$entity.id
-            answer.value = answerValue
+            answer.value = JSONStored(answerValue)
             try await answer.save(on: db)
 
             let answerID = try answer.requireID()
-            var updatedAnswers = notation.answers
+            var updatedAnswers = notation.answers.value
             updatedAnswers[currentState] = answerID
-            notation.answers = updatedAnswers
+            notation.answers = JSONStored(updatedAnswers)
         }
 
         let actor: NotationActor
@@ -544,7 +544,7 @@ struct APIHandler: APIProtocol {
             actor: actor,
             at: Date()
         )
-        notation.stateHistory = notation.stateHistory + [stepEvent]
+        notation.stateHistory = JSONStored(notation.stateHistory.value + [stepEvent])
         try await notation.save(on: db)
 
         let instance = try await buildFlowInstance(notation: notation, template: template, db: db)
@@ -885,14 +885,15 @@ struct APIHandler: APIProtocol {
         db: Database
     ) async throws -> Components.Schemas.FlowInstance {
         let id = try notation.requireID()
-        let questionnaire = template.questionnaire
+        let questionnaire = template.questionnaire.value
 
-        let currentState = notation.stateHistory.last?.toState ?? "BEGIN"
+        let stateHistory = notation.stateHistory.value
+        let currentState = stateHistory.last?.toState ?? "BEGIN"
         let isFlowComplete = currentState == "END"
 
         let nonSentinelStates = questionnaire.keys.filter { $0 != "BEGIN" && $0 != "END" }
         let totalFlowStates = max(1, nonSentinelStates.count)
-        let answeredCount = max(0, notation.stateHistory.count - 1)
+        let answeredCount = max(0, stateHistory.count - 1)
         let progressPercent = Double(answeredCount) / Double(totalFlowStates)
 
         let currentStep: Components.Schemas.StateDescriptor?
@@ -902,7 +903,8 @@ struct APIHandler: APIProtocol {
             currentStep = try await buildStateDescriptor(stateName: currentState, db: db)
         }
 
-        let history: [Components.Schemas.StepHistory] = notation.stateHistory
+        let history: [Components.Schemas.StepHistory] =
+            stateHistory
             .filter { $0.fromState != "BEGIN" }
             .map { event in
                 let actorRole: String

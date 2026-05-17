@@ -1,14 +1,13 @@
 import FluentKit
-import SQLKit
 
 /// Creates the `git_repositories` table for tracking AWS CodeCommit repositories
 /// that store notation templates.
 ///
 /// Each repository is owned by exactly one ``Project`` per AWS account
-/// (environment), enforced by `git_repositories_project_account_idx`. The
-/// `onDelete: .restrict` on `project_id` prevents deleting a project while any
-/// repository still points at it. Lookup indexes by `repository_name` and
-/// `(aws_account_id, aws_region)` support common operational queries.
+/// (environment). The `onDelete: .restrict` on `project_id` prevents deleting a
+/// project while any repository still points at it. One-repo-per-project-per-
+/// account uniqueness is enforced via Fluent's `.unique(on:)` so the rule
+/// applies on both SQLite and Postgres.
 struct CreateGitRepositories: AsyncMigration {
     func prepare(on database: any Database) async throws {
         try await database.schema(GitRepository.schema)
@@ -23,21 +22,8 @@ struct CreateGitRepositories: AsyncMigration {
             .field("inserted_at", .datetime, .required)
             .field("updated_at", .datetime, .required)
             .unique(on: "codecommit_repository_id")
+            .unique(on: "project_id", "aws_account_id")
             .create()
-
-        guard let sql = database as? SQLDatabase else { return }
-        try await sql.raw(
-            "CREATE INDEX git_repositories_name_idx ON git_repositories (repository_name)"
-        ).run()
-        try await sql.raw(
-            "CREATE INDEX git_repositories_aws_lookup_idx ON git_repositories (aws_account_id, aws_region)"
-        ).run()
-        try await sql.raw(
-            """
-            CREATE UNIQUE INDEX git_repositories_project_account_idx
-            ON git_repositories (project_id, aws_account_id)
-            """
-        ).run()
     }
 
     func revert(on database: any Database) async throws {

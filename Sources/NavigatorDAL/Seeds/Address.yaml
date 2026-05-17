@@ -58,17 +58,3 @@ records:
     is_verified: true
     mailroom:
       name: Ridgeview Mail Center
-  - entity:
-      name: Sagebrush Services LLC
-      entity_type:
-        name: Multi Member LLC
-        jurisdiction:
-          name: Nevada
-    street: 405 Mae Anne Ave Ste 405-9004
-    city: Reno
-    state: NV
-    country: USA
-    zip: "89523"
-    is_verified: true
-    mailroom:
-      name: Ridgeview Mail Center

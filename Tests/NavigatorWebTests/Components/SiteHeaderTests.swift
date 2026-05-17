@@ -46,8 +46,8 @@ struct SiteHeaderTests {
 
     @Test("emits the brand name as a data attribute")
     func emitsBrandDataAttribute() {
-        let html = SiteHeader(brand: SagebrushBrand(), authUser: nil).render()
+        let html = SiteHeader(brand: NeonLawBrand(), authUser: nil).render()
 
-        #expect(html.contains(#"data-brand="Sagebrush""#))
+        #expect(html.contains(#"data-brand="Neon Law""#))
     }
 }

@@ -15,7 +15,7 @@ public protocol NavigatorAPIClientProtocol {
 public struct NavigatorAPIClient: NavigatorAPIClientProtocol {
     let baseURL: String
 
-    public init(baseURL: String = "https://www.sagebrush.services") {
+    public init(baseURL: String) {
         self.baseURL = baseURL
     }
 

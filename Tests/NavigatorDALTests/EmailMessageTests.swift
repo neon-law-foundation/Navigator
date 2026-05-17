@@ -153,7 +153,7 @@ struct EmailMessageTests {
 
             let otherBrand = makeMessage(
                 messageId: "<other@example.com>",
-                toAddress: "support@sagebrush.services"
+                toAddress: "support@example.test"
             )
             otherBrand.receivedAt = base.addingTimeInterval(10_000)
             _ = try await repo.create(otherBrand, rawBlobUrl: "s3://other", attachments: [])
@@ -195,7 +195,7 @@ struct EmailMessageTests {
             read.acknowledgedAt = Date()
             let otherBrand = makeMessage(
                 messageId: "<other@example.com>",
-                toAddress: "support@sagebrush.services"
+                toAddress: "support@example.test"
             )
 
             _ = try await repo.create(unread1, rawBlobUrl: "s3://u1", attachments: [])

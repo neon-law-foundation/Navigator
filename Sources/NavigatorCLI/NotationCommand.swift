@@ -36,7 +36,7 @@ struct NotationCommand: Command {
         }
 
         let templateID = try template.requireID()
-        let questionnaire = template.questionnaire
+        let questionnaire = template.questionnaire.value
         let markdownContent = template.markdownContent
 
         // Resolve final person/entity IDs based on the template's respondent type.
@@ -53,7 +53,7 @@ struct NotationCommand: Command {
             resolvedEntityID = entityID
             if resolvedEntityID == nil {
                 print("Error: Template '\(code)' requires an entity. Pass --entity <id>.")
-                print("List entities with: navigator ddl (check entities table)")
+                print("Use `navigator list templates` and `navigator show template <code>` to discover seeded data.")
                 try await dbManager.shutdown()
                 exit(1)
             }
@@ -120,7 +120,7 @@ struct NotationCommand: Command {
                 renderedContent: rendered.isEmpty ? nil : rendered
             )
             let notationID = try notation.requireID()
-            let finalState = notation.stateHistory.last?.toState ?? "BEGIN"
+            let finalState = notation.stateHistory.value.last?.toState ?? "BEGIN"
             print("Created notation #\(notationID) — state: \(finalState)")
         } catch {
             try await dbManager.shutdown()
