@@ -146,11 +146,17 @@ struct MessageReplyContext: Sendable {
     let originalSubject: String
 }
 
-/// `/admin/messages/:id` — single sent message.
+/// `/admin/messages/:id` — single sent message plus the rest of the
+/// conversation thread and a Reply shortcut that threads the next
+/// outbound row back into the same conversation.
 struct MessageShowPage: HTML {
     let brand: any Brand
     let message: EmailMessage
     let sendError: String?
+    let thread: [EmailMessage]
+    let replyTarget: EmailMessage?
+
+    private var messageID: String { message.id?.uuidString ?? "" }
 
     var body: some HTML {
         AdminPageLayout(
@@ -161,6 +167,13 @@ struct MessageShowPage: HTML {
             div(.class("flex items-center justify-between mb-6")) {
                 a(.href("/admin/messages"), .class("text-sm text-gray-600 hover:underline")) {
                     "\u{2190} Back to messages"
+                }
+                if let replyTarget {
+                    LinkButton(
+                        "Reply",
+                        href: "/admin/messages/new?reply_to=\(replyTarget.id?.uuidString ?? "")",
+                        variant: .primary
+                    )
                 }
             }
             if let sendError {
@@ -188,12 +201,13 @@ struct MessageShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Body" }
                 pre(.class("text-sm text-gray-800 whitespace-pre-wrap")) {
                     message.textBody ?? "(empty)"
                 }
             }
+            MessageThreadSection(thread: thread, currentMessageID: message.id)
         }
     }
 }

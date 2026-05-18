@@ -38,12 +38,27 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         // message button on a project show). `reply_to` wins if both are
         // present.
         let replyToParam = try? req.query.get(String.self, at: "reply_to")
+        let forwardParam = try? req.query.get(String.self, at: "forward")
         let projectIdParam = try? req.query.get(String.self, at: "project_id")
         var form = MessageFormValues()
         var replyContext: MessageReplyContext? = nil
         let db = try await requireDatabaseService(req).db
 
-        if let replyToParam, let replyToID = UUID(uuidString: replyToParam) {
+        if let forwardParam, let forwardID = UUID(uuidString: forwardParam),
+            let original = try await EmailMessage.find(forwardID, on: db)
+        {
+            // Forwarded body is the operator's note slot above a quoted
+            // copy of the original. Threading is intentionally NOT
+            // inherited — a forward starts a new conversation with a
+            // different recipient.
+            let prefix = original.subject.lowercased().hasPrefix("fwd:") ? "" : "Fwd: "
+            let quoted = quotedBody(of: original)
+            form = MessageFormValues(
+                to: "",
+                subject: "\(prefix)\(original.subject)",
+                body: "\n\n--- Forwarded message ---\n\(quoted)"
+            )
+        } else if let replyToParam, let replyToID = UUID(uuidString: replyToParam) {
             if let parent = try await EmailMessage.find(replyToID, on: db) {
                 let replySubject =
                     parent.subject.lowercased().hasPrefix("re:")
@@ -154,8 +169,23 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             throw Abort(.notFound)
         }
         let sendError = (try? req.query.get(String.self, at: "send_error")).map { decodeFlash($0) }
+        let thread = try await EmailMessageRepository(database: db)
+            .findByThreadId(message.threadId)
+        // Reply target = most recent inbound row in the thread, if any.
+        // Replying to your own outbound makes no sense, so the button is
+        // hidden when there is nothing inbound to thread back to.
+        let replyTarget =
+            thread
+            .filter { $0.direction == .inbound }
+            .last
         return HTMLResponse {
-            MessageShowPage(brand: brand, message: message, sendError: sendError)
+            MessageShowPage(
+                brand: brand,
+                message: message,
+                sendError: sendError,
+                thread: thread,
+                replyTarget: replyTarget
+            )
         }
     }
 }
@@ -195,6 +225,20 @@ private struct MessagePayload: Content {
 
 extension String {
     fileprivate var nonEmpty: String? { isEmpty ? nil : self }
+}
+
+/// Renders a forwarded message's body as the standard quoted block —
+/// each line prefixed with `> ` and headers above the original text.
+/// Keeps the operator's compose slot at the top so what they type
+/// reads as the new prelude.
+private func quotedBody(of message: EmailMessage) -> String {
+    let header =
+        "From: \(message.fromAddress)\nTo: \(message.toAddress)\nSubject: \(message.subject)\n"
+    let body = message.textBody ?? ""
+    let quoted = body.split(separator: "\n", omittingEmptySubsequences: false)
+        .map { "> \($0)" }
+        .joined(separator: "\n")
+    return "\(header)\n\(quoted)"
 }
 
 private func validateMessage(values: MessageFormValues) -> MessageFormErrors {
