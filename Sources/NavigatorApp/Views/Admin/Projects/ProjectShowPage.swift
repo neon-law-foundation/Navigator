@@ -27,7 +27,17 @@ struct ProjectShowPage: HTML {
                 a(.href("/admin/projects"), .class("text-sm text-gray-600 hover:underline")) {
                     "\u{2190} Back to projects"
                 }
-                LinkButton("Edit", href: "/admin/projects/\(projectID)/edit", variant: .primary)
+                div(.class("flex items-center gap-2")) {
+                    LinkButton(
+                        "Send message",
+                        href: "/admin/messages/new?project_id=\(projectID)"
+                    )
+                    LinkButton(
+                        "Edit",
+                        href: "/admin/projects/\(projectID)/edit",
+                        variant: .primary
+                    )
+                }
             }
             section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Details" }
