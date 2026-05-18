@@ -129,6 +129,61 @@ public struct EmailMessageRepository: Sendable {
         }
     }
 
+    /// Composes a new outbound email and persists it as an ``EmailMessage`` row.
+    ///
+    /// Outbound rows share the inbound schema; columns that have no
+    /// meaning for sent mail are filled with sentinel values:
+    /// ``EmailMessage/outboundVerdictSentinel`` for the four SES verdicts,
+    /// the send timestamp for `received_at`, and an empty `references` /
+    /// `cc_addresses` / `bcc_addresses` array. The raw-MIME ``Blob`` is
+    /// pointed at a synthetic `internal:outbound/<message-id>` URL because
+    /// the admin compose flow does not upload to S3.
+    ///
+    /// The new row's `from_address` is the caller-supplied address and is
+    /// expected to be one of ``EmailMessage/supportFromAddresses`` — the
+    /// caller validates this so the repository remains transport-neutral.
+    ///
+    /// - Parameters:
+    ///   - to: The recipient address (`To:` header).
+    ///   - from: The verified SES sender address (`From:` header).
+    ///   - subject: The subject line.
+    ///   - textBody: The plain-text message body.
+    /// - Returns: The saved ``EmailMessage`` row.
+    public func createOutbound(
+        to: String,
+        from: String,
+        subject: String,
+        textBody: String
+    ) async throws -> EmailMessage {
+        try await database.transaction { tx in
+            let messageID = UUID()
+            let messageIdHeader = "<\(messageID.uuidString)@neonlaw.org>"
+
+            let blob = Blob()
+            blob.objectStorageUrl = "internal:outbound/\(messageID.uuidString)"
+            blob.referencedBy = .emailMessages
+            blob.referencedById = messageID
+            try await blob.save(on: tx)
+
+            let message = EmailMessage()
+            message.id = messageID
+            message.messageId = messageIdHeader
+            message.threadId = messageIdHeader
+            message.fromAddress = from
+            message.toAddress = to
+            message.subject = subject
+            message.textBody = textBody
+            message.$rawBlob.id = blob.id!
+            message.spamVerdict = EmailMessage.outboundVerdictSentinel
+            message.virusVerdict = EmailMessage.outboundVerdictSentinel
+            message.dkimVerdict = EmailMessage.outboundVerdictSentinel
+            message.dmarcVerdict = EmailMessage.outboundVerdictSentinel
+            message.receivedAt = Date()
+            try await message.save(on: tx)
+            return message
+        }
+    }
+
     /// Returns the email with the given RFC 5322 `Message-ID`, or `nil` if none exists.
     ///
     /// Used by ``EmailThreadResolver`` during ancestor lookups and by the
