@@ -68,9 +68,91 @@ func registerAdminEntitiesRoutes(_ app: Application, brand: any Brand) {
             .filter(\.$entity.$id == entity.id!)
             .with(\.$person)
             .all()
+        let assignedIDs = Set(people.map { $0.$person.id })
+        let availablePeople = try await Person.query(on: db).sort(\.$name).all()
+            .filter {
+                guard let id = $0.id else { return true }
+                return !assignedIDs.contains(id)
+            }
+        let assignmentError =
+            (try? req.query.get(String.self, at: "assignment_error")).map { decodeFlash($0) }
         return HTMLResponse {
-            EntityShowPage(brand: brand, entity: entity, people: people)
+            EntityShowPage(
+                brand: brand,
+                entity: entity,
+                people: people,
+                availablePeople: availablePeople,
+                assignmentError: assignmentError
+            )
         }
+    }
+
+    // Create entity role assignment
+    group.post(":id", "roles") { req -> Response in
+        let entity = try await loadEntity(req: req)
+        struct Payload: Content {
+            var personId: String?
+            var role: String?
+        }
+        let payload = (try? req.content.decode(Payload.self)) ?? Payload(personId: nil, role: nil)
+        let db = try await requireDatabaseService(req).db
+        guard let raw = payload.personId, let personID = UUID(uuidString: raw),
+            try await Person.find(personID, on: db) != nil
+        else {
+            let flash = encodeFlash("Pick a person.")
+            return req.redirect(
+                to: "/admin/entities/\(entity.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        guard let roleString = payload.role,
+            let role = PersonEntityRoleType(rawValue: roleString)
+        else {
+            let flash = encodeFlash("Pick a role.")
+            return req.redirect(
+                to: "/admin/entities/\(entity.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        let existing = try await PersonEntityRole.query(on: db)
+            .filter(\.$person.$id == personID)
+            .filter(\.$entity.$id == entity.id!)
+            .first()
+        if existing != nil {
+            let flash = encodeFlash("That person already has a role on this entity.")
+            return req.redirect(
+                to: "/admin/entities/\(entity.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        let row = PersonEntityRole()
+        row.$person.id = personID
+        row.$entity.id = entity.id!
+        row.role = role
+        try await row.save(on: db)
+        return req.redirect(
+            to: "/admin/entities/\(entity.id!.uuidString)",
+            redirectType: .normal
+        )
+    }
+
+    // Delete entity role assignment
+    group.on(.DELETE, ":id", "roles", ":role_id") { req -> Response in
+        let entity = try await loadEntity(req: req)
+        guard let raw = req.parameters.get("role_id"), let id = UUID(uuidString: raw) else {
+            throw Abort(.badRequest)
+        }
+        let db = try await requireDatabaseService(req).db
+        guard let row = try await PersonEntityRole.find(id, on: db),
+            row.$entity.id == entity.id
+        else {
+            throw Abort(.notFound)
+        }
+        try await row.delete(on: db)
+        return req.redirect(
+            to: "/admin/entities/\(entity.id!.uuidString)",
+            redirectType: .normal
+        )
     }
 
     group.get(":id", "edit") { req -> HTMLResponse in

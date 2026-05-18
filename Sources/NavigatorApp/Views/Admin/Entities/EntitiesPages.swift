@@ -160,6 +160,8 @@ struct EntityShowPage: HTML {
     let brand: any Brand
     let entity: Entity
     let people: [PersonEntityRole]
+    let availablePeople: [Person]
+    let assignmentError: String?
 
     private var entityID: String { entity.id?.uuidString ?? "" }
 
@@ -186,19 +188,77 @@ struct EntityShowPage: HTML {
             }
             section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "People" }
+                if let assignmentError {
+                    FormErrors([assignmentError])
+                }
                 if people.isEmpty {
-                    p(.class("text-sm text-gray-500")) { "No people on this entity yet." }
+                    p(.class("text-sm text-gray-500 mb-4")) {
+                        "No people on this entity yet."
+                    }
                 } else {
-                    ul(.class("space-y-2 text-sm")) {
+                    ul(.class("space-y-2 text-sm mb-6")) {
                         for role in people {
-                            li(.custom(name: "data-role", value: role.role.rawValue)) {
-                                a(
-                                    .href("/admin/people/\(role.$person.id.uuidString)"),
-                                    .class("text-indigo-700 hover:underline")
-                                ) { role.person.name }
-                                span(.class("text-gray-500")) { " — \(role.role.rawValue)" }
+                            li(
+                                .class("flex items-center justify-between"),
+                                .custom(name: "data-role", value: role.role.rawValue),
+                                .custom(
+                                    name: "data-person-id",
+                                    value: role.$person.id.uuidString
+                                )
+                            ) {
+                                div {
+                                    a(
+                                        .href("/admin/people/\(role.$person.id.uuidString)"),
+                                        .class("text-indigo-700 hover:underline")
+                                    ) { role.person.name }
+                                    span(.class("text-gray-500")) {
+                                        " — \(role.role.rawValue)"
+                                    }
+                                }
+                                FormLayout(
+                                    action:
+                                        "/admin/entities/\(entityID)/roles/\(role.id?.uuidString ?? "")",
+                                    method: .delete
+                                ) {
+                                    button(
+                                        .type(.submit),
+                                        .class("text-xs text-red-600 hover:underline")
+                                    ) { "Remove" }
+                                }
                             }
                         }
+                    }
+                }
+                div(.class("border-t border-gray-200 pt-4")) {
+                    p(.class("text-sm font-medium text-gray-700 mb-2")) {
+                        "Assign a person"
+                    }
+                    FormLayout(
+                        action: "/admin/entities/\(entityID)/roles",
+                        method: .post
+                    ) {
+                        div(.class("grid grid-cols-2 gap-3")) {
+                            SelectField(
+                                name: "personId",
+                                label: "Person",
+                                options: availablePeople.map {
+                                    SelectOption(
+                                        value: $0.id?.uuidString ?? "",
+                                        label: $0.name
+                                    )
+                                },
+                                required: true,
+                                includeBlank: true,
+                                blankLabel: "Pick a person\u{2026}"
+                            )
+                            SelectField(
+                                PersonEntityRoleType.self,
+                                name: "role",
+                                label: "Role",
+                                required: true
+                            )
+                        }
+                        SubmitButton("Assign", variant: .primary)
                     }
                 }
             }
