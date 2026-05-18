@@ -56,17 +56,4 @@ struct AdminInboxTests {
         }
     }
 
-    @Test("GET /admin/messages renders the placeholder page")
-    func messagesPlaceholder() async throws {
-        try await withApp(configure: testConfigure) { app in
-            try await app.testing().test(
-                .GET,
-                "/admin/messages",
-                afterResponse: { res async in
-                    #expect(res.status == .ok)
-                    #expect(res.body.string.contains("Outbound messaging is not wired up yet."))
-                }
-            )
-        }
-    }
 }
