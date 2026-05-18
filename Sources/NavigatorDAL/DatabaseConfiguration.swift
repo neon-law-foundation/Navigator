@@ -42,6 +42,7 @@ public struct NavigatorDALConfiguration {
             CreateEntityBillingProfiles(),
             CreateInvoices(),
             CreateInvoiceLineItems(),
+            AddLetterDetails(),
         ]
     }
 
@@ -63,6 +64,7 @@ public struct NavigatorDALConfiguration {
             "Credential",
             "Mailroom",
             "Address",
+            "Letter",
             "PersonEntityRole",
             "PersonProjectRole",
             "Answer",
@@ -227,6 +229,8 @@ public struct NavigatorDALConfiguration {
             try await insertAddress(record: record, lookupFields: lookupFields, database: database)
         case "Mailroom":
             try await insertMailroom(record: record, lookupFields: lookupFields, database: database)
+        case "Letter":
+            try await insertLetter(record: record, lookupFields: lookupFields, database: database)
         case "PersonEntityRole":
             try await insertPersonEntityRole(record: record, lookupFields: lookupFields, database: database)
         case "PersonProjectRole":

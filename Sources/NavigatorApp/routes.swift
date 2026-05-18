@@ -1,8 +1,40 @@
+import NavigatorDAL
 import NavigatorWeb
 import Vapor
 import VaporElementary
 
 /// Registers every public route served by the Neon Law Foundation site.
+///
+/// ### Route table
+///
+/// The HTML pages are listed here in declaration order so this file reads
+/// like a Rails `routes.rb`. JSON API operations are generated from
+/// `Sources/NavigatorWeb/openapi.yaml` and mounted at `/api/...` by
+/// ``registerAPIRoutes(on:databaseService:serverURL:mailIngestSecret:)``.
+///
+/// | Method | Path                                       | View / handler            |
+/// | ------ | ------------------------------------------ | ------------------------- |
+/// | GET    | `/`                                        | `HomePage`                |
+/// | GET    | `/about`                                   | `AboutPage`               |
+/// | GET    | `/education`                               | `EducationPage`           |
+/// | GET    | `/workshops`                               | 301 → `/workshops/genai-training` |
+/// | GET    | `/workshops/genai-training`                | `WorkshopsPage`           |
+/// | GET    | `/workshops/genai-training/:slug`          | `WorkshopMaterialPage`    |
+/// | GET    | `/navigator`                               | `NavigatorPage`           |
+/// | GET    | `/privacy`                                 | `PrivacyPage`             |
+/// | GET    | `/terms`                                   | `TermsPage`               |
+/// | GET    | `/contact`                                 | `ContactPage`             |
+/// | GET    | `/blog`                                    | `BlogIndexPage`           |
+/// | GET    | `/blog/:slug`                              | `BlogPostPage`            |
+/// | GET    | `/admin/mailroom`                          | `MailroomPage` (all mail) |
+/// | GET    | `/portal/mailroom`                         | `MailroomPage` (all mail) |
+/// | GET    | `/health`                                  | DB round-trip probe       |
+/// | GET    | `/openapi.yaml`                            | OpenAPI contract          |
+/// | `*`    | `/api/...`                                 | OpenAPI-generated JSON    |
+///
+/// `/admin/mailroom` and `/portal/mailroom` render the same view today —
+/// authentication is deferred, so the admin/portal split exists only as a
+/// stable URL surface that auth middleware can later partition.
 public func routes(_ app: Application) throws {
     let brand = NLFBrand()
 
@@ -74,6 +106,14 @@ public func routes(_ app: Application) throws {
         return HTMLResponse { BlogPostPage(brand: brand, post: post) }
     }
 
+    app.get("admin", "mailroom") { req -> HTMLResponse in
+        try await renderMailroom(req: req, brand: brand, portalLabel: "Admin", basePath: "/admin/mailroom")
+    }
+
+    app.get("portal", "mailroom") { req -> HTMLResponse in
+        try await renderMailroom(req: req, brand: brand, portalLabel: "Portal", basePath: "/portal/mailroom")
+    }
+
     // Readiness signal for orchestrators and load balancers. Returns 200
     // only when the database round-trips a query; failures surface as 503
     // so a rotating deployment can drain unhealthy tasks.
@@ -101,4 +141,52 @@ public func routes(_ app: Application) throws {
         headers.replaceOrAdd(name: .contentType, value: OpenAPISpec.contentType)
         return Response(status: .ok, headers: headers, body: .init(string: yaml))
     }
+}
+
+/// Renders one of the two mail-room URLs. The two routes only differ in
+/// their `portalLabel` chip and the `basePath` they hand the column
+/// headers so sort links stay on the same URL.
+///
+/// `?sort=` is parsed per JSON:API 1.1: comma-separated fields, leading
+/// `-` for descending. Unknown fields are rejected with `400 Bad Request`
+/// as the spec MUSTs. Absent `?sort=` falls back to ``MailroomPage/defaultSort``
+/// so the active-sort arrow shows up on first load.
+private func renderMailroom(
+    req: Request,
+    brand: any Brand,
+    portalLabel: String,
+    basePath: String
+) async throws -> HTMLResponse {
+    let raw = try? req.query.get(String.self, at: "sort")
+    let parsed = SortSpec.parse(raw)
+    let spec: SortSpec
+    do {
+        spec = try parsed.validated(against: MailroomPage.sortableKeys)
+    } catch .unsupportedField(let key) {
+        throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+    }
+    let activeSpec = spec.fields.isEmpty ? MailroomPage.defaultSort : spec
+    let letters = try await loadLetters(req: req)
+    let sorted = MailroomPage.sorted(letters, by: activeSpec)
+    return HTMLResponse {
+        MailroomPage(
+            brand: brand,
+            portalLabel: portalLabel,
+            basePath: basePath,
+            letters: sorted,
+            sort: activeSpec
+        )
+    }
+}
+
+/// Fetches every `Letter` row with its mailroom eager-loaded so the mail
+/// room view can render without per-row queries. Returns an empty array
+/// when the database has not been wired up — the page renders its empty
+/// state in that case rather than 503-ing the request.
+private func loadLetters(req: Request) async throws -> [Letter] {
+    guard let databaseService = req.application.databaseService else {
+        return []
+    }
+    let db = try await databaseService.db
+    return try await LetterRepository(database: db).findAllWithMailroom()
 }
