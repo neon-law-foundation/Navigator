@@ -95,13 +95,15 @@ func registerAdminEntitiesRoutes(_ app: Application, brand: any Brand) {
             }
         let assignmentError =
             (try? req.query.get(String.self, at: "assignment_error")).map { decodeFlash($0) }
+        let activity = try await loadEntityActivity(entity: entity, db: db)
         return HTMLResponse {
             EntityShowPage(
                 brand: brand,
                 entity: entity,
                 people: people,
                 availablePeople: availablePeople,
-                assignmentError: assignmentError
+                assignmentError: assignmentError,
+                activity: activity
             )
         }
     }

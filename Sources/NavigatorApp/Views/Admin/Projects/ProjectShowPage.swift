@@ -16,7 +16,7 @@ struct ProjectShowPage: HTML {
     let gitRepositories: [GitRepository]
     let availablePeople: [Person]
     let assignmentError: String?
-    let activity: [ProjectActivityEvent]
+    let activity: [AdminActivityEvent]
 
     private var projectID: String { project.id?.uuidString ?? "" }
 
@@ -152,7 +152,10 @@ struct ProjectShowPage: HTML {
                     }
                 }
             }
-            ProjectActivitySection(events: activity)
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this project yet."
+            )
         }
     }
 }
