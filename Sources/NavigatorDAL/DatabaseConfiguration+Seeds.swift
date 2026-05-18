@@ -892,6 +892,68 @@ extension NavigatorDALConfiguration {
         try await mailroom.save(on: database)
     }
 
+    // MARK: - Letter
+
+    public static func insertLetter(
+        record: [String: Any],
+        lookupFields: [String],
+        database: Database
+    ) async throws {
+        let subject = record["subject"] as? String
+        let sender = record["sender"] as? String
+        let mailboxNumber = record["mailbox_number"] as? Int
+        let receivedAt = parseISODate(record["received_at"])
+
+        let mailroomID: UUID?
+        if let mailroomDict = record["mailroom"] as? [String: Any],
+            let mailroomName = mailroomDict["name"] as? String
+        {
+            mailroomID = try await Mailroom.query(on: database)
+                .filter(\.$name == mailroomName)
+                .first()?.id
+        } else {
+            mailroomID = nil
+        }
+
+        guard let mailroomID = mailroomID else { return }
+
+        if !lookupFields.isEmpty, let subject = subject {
+            if let existing = try await Letter.query(on: database)
+                .filter(\.$mailroom.$id == mailroomID)
+                .filter(\.$subject == subject)
+                .first()
+            {
+                existing.sender = sender ?? existing.sender
+                existing.mailboxNumber = mailboxNumber ?? existing.mailboxNumber
+                existing.receivedAt = receivedAt ?? existing.receivedAt
+                try await existing.save(on: database)
+                return
+            }
+        }
+
+        let letter = Letter()
+        letter.$mailroom.id = mailroomID
+        letter.subject = subject
+        letter.sender = sender
+        letter.mailboxNumber = mailboxNumber
+        letter.receivedAt = receivedAt
+        try await letter.save(on: database)
+    }
+
+    private static func parseISODate(_ raw: Any?) -> Date? {
+        if let date = raw as? Date {
+            return date
+        }
+        guard let string = raw as? String else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: string) {
+            return date
+        }
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: string)
+    }
+
     // MARK: - PersonEntityRole
 
     public static func insertPersonEntityRole(
