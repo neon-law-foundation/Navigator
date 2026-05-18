@@ -115,6 +115,13 @@ public actor TemplateService {
             throw TemplateError.validationFailed(validations)
         }
 
+        if !questionnaire.isEmpty {
+            try questionnaire.validate()
+        }
+        if !workflow.isEmpty {
+            try workflow.validate()
+        }
+
         let allVersions = try await Template.query(on: database)
             .filter(\.$gitRepository.$id == gitRepositoryID)
             .filter(\.$version == version)
