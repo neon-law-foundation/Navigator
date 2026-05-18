@@ -107,17 +107,11 @@ public func routes(_ app: Application) throws {
     }
 
     app.get("admin", "mailroom") { req -> HTMLResponse in
-        let letters = try await loadLetters(req: req)
-        return HTMLResponse {
-            MailroomPage(brand: brand, portalLabel: "Admin", letters: letters)
-        }
+        try await renderMailroom(req: req, brand: brand, portalLabel: "Admin", basePath: "/admin/mailroom")
     }
 
     app.get("portal", "mailroom") { req -> HTMLResponse in
-        let letters = try await loadLetters(req: req)
-        return HTMLResponse {
-            MailroomPage(brand: brand, portalLabel: "Portal", letters: letters)
-        }
+        try await renderMailroom(req: req, brand: brand, portalLabel: "Portal", basePath: "/portal/mailroom")
     }
 
     // Readiness signal for orchestrators and load balancers. Returns 200
@@ -146,6 +140,42 @@ public func routes(_ app: Application) throws {
         var headers = HTTPHeaders()
         headers.replaceOrAdd(name: .contentType, value: OpenAPISpec.contentType)
         return Response(status: .ok, headers: headers, body: .init(string: yaml))
+    }
+}
+
+/// Renders one of the two mail-room URLs. The two routes only differ in
+/// their `portalLabel` chip and the `basePath` they hand the column
+/// headers so sort links stay on the same URL.
+///
+/// `?sort=` is parsed per JSON:API 1.1: comma-separated fields, leading
+/// `-` for descending. Unknown fields are rejected with `400 Bad Request`
+/// as the spec MUSTs. Absent `?sort=` falls back to ``MailroomPage/defaultSort``
+/// so the active-sort arrow shows up on first load.
+private func renderMailroom(
+    req: Request,
+    brand: any Brand,
+    portalLabel: String,
+    basePath: String
+) async throws -> HTMLResponse {
+    let raw = try? req.query.get(String.self, at: "sort")
+    let parsed = SortSpec.parse(raw)
+    let spec: SortSpec
+    do {
+        spec = try parsed.validated(against: MailroomPage.sortableKeys)
+    } catch .unsupportedField(let key) {
+        throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+    }
+    let activeSpec = spec.fields.isEmpty ? MailroomPage.defaultSort : spec
+    let letters = try await loadLetters(req: req)
+    let sorted = MailroomPage.sorted(letters, by: activeSpec)
+    return HTMLResponse {
+        MailroomPage(
+            brand: brand,
+            portalLabel: portalLabel,
+            basePath: basePath,
+            letters: sorted,
+            sort: activeSpec
+        )
     }
 }
 
