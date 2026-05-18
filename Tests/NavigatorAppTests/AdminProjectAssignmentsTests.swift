@@ -149,10 +149,11 @@ struct AdminProjectAssignmentsTests {
                 afterResponse: { res async in
                     let body = res.body.string
                     // The assigned person's name appears in the People
-                    // section, but NOT inside the assign-a-person <select>
-                    // — counting occurrences below 3 is the cheap proxy.
+                    // section AND in the activity timeline row for the
+                    // assignment — but NOT inside the assign-a-person
+                    // <select>. Two occurrences exactly.
                     let count = body.components(separatedBy: person.name).count - 1
-                    #expect(count == 1)
+                    #expect(count == 2)
                 }
             )
         }

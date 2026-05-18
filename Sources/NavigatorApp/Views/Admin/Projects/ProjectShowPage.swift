@@ -16,6 +16,7 @@ struct ProjectShowPage: HTML {
     let gitRepositories: [GitRepository]
     let availablePeople: [Person]
     let assignmentError: String?
+    let activity: [ProjectActivityEvent]
 
     private var projectID: String { project.id?.uuidString ?? "" }
 
@@ -139,7 +140,7 @@ struct ProjectShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Git repositories" }
                 if gitRepositories.isEmpty {
                     p(.class("text-sm text-gray-500")) { "No repositories linked." }
@@ -151,6 +152,7 @@ struct ProjectShowPage: HTML {
                     }
                 }
             }
+            ProjectActivitySection(events: activity)
         }
     }
 }
