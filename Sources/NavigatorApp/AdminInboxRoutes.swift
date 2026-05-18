@@ -6,23 +6,23 @@ import NavigatorWeb
 import Vapor
 import VaporElementary
 
-/// Routes for `/admin/inbox` — read-only inbound email view plus an
-/// `acknowledge` action. Outbound `/admin/messages` is intentionally not
-/// included yet because it requires relaxing the `EmailMessage` schema
-/// (the SES verdict columns are not meaningful for sent mail) and that
-/// migration is deferred.
+/// Routes for `/admin/inbox` — inbound mail view plus an acknowledge
+/// action. Outbound rows live in the same `EmailMessage` table; this
+/// surface filters them out via ``EmailMessage/direction`` so the inbox
+/// stays focused on received mail.
 func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "inbox")
 
     group.get { req -> HTMLResponse in
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
-        let messages = try await EmailMessage.query(on: db)
+        let all = try await EmailMessage.query(on: db)
             .sort(\.$receivedAt, .descending)
             .all()
+        let inbound = all.filter { $0.direction == .inbound }
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            InboxIndexPage(brand: brand, messages: messages, flash: flash)
+            InboxIndexPage(brand: brand, messages: inbound, flash: flash)
         }
     }
 

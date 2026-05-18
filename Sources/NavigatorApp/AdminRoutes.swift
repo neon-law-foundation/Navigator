@@ -16,9 +16,6 @@ public func registerAdminRoutes(_ app: Application, brand: any Brand) throws {
         let tiles = try await dashboardTiles(req: req)
         return HTMLResponse { AdminDashboard(brand: brand, tiles: tiles) }
     }
-    app.get("admin", "messages") { _ -> HTMLResponse in
-        HTMLResponse { AdminMessagesPlaceholderPage(brand: brand) }
-    }
 }
 
 /// Loads the per-resource counts the dashboard renders. Sections without
@@ -59,7 +56,10 @@ private func loadResourceCounts(req: Request) async throws -> [AdminSection: Int
     counts[.userRoleAudit] = try? await UserRoleAudit.query(on: db).count()
     counts[.shareClasses] = try? await ShareClass.query(on: db).count()
     counts[.shareIssuances] = try? await ShareIssuance.query(on: db).count()
-    counts[.inbox] = try? await EmailMessage.query(on: db).count()
-    counts[.messages] = try? await EmailMessage.query(on: db).count()
+    // Direction is inferred Swift-side from from_address, so the
+    // counts split the table after a single fetch.
+    let allMessages = try? await EmailMessage.query(on: db).all()
+    counts[.inbox] = allMessages.map { $0.filter { $0.direction == .inbound }.count }
+    counts[.messages] = allMessages.map { $0.filter { $0.direction == .outbound }.count }
     return counts
 }
