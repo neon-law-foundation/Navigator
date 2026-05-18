@@ -16,6 +16,9 @@ public func registerAdminRoutes(_ app: Application, brand: any Brand) throws {
         let tiles = try await dashboardTiles(req: req)
         return HTMLResponse { AdminDashboard(brand: brand, tiles: tiles) }
     }
+    app.get("admin", "messages") { _ -> HTMLResponse in
+        HTMLResponse { AdminMessagesPlaceholderPage(brand: brand) }
+    }
 }
 
 /// Loads the per-resource counts the dashboard renders. Sections without
