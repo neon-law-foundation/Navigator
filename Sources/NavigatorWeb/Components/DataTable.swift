@@ -52,19 +52,26 @@ public struct DataTable<Row>: HTML where Row: Sendable {
     public let sort: SortSpec
     public let basePath: String
     public let emptyMessage: String
+    /// Extra `(name, value)` pairs to round-trip through every sort link
+    /// so a search filter (`?q=...`) survives a sort click. Encoded
+    /// alphabetically once, before `sort=`, so the generated URLs are
+    /// deterministic and easy to assert against.
+    public let queryItems: [(String, String)]
 
     public init(
         columns: [DataTableColumn<Row>],
         rows: [Row],
         sort: SortSpec = SortSpec(),
         basePath: String,
-        emptyMessage: String = "No rows."
+        emptyMessage: String = "No rows.",
+        queryItems: [(String, String)] = []
     ) {
         self.columns = columns
         self.rows = rows
         self.sort = sort
         self.basePath = basePath
         self.emptyMessage = emptyMessage
+        self.queryItems = queryItems
     }
 
     public var body: some HTML {
@@ -79,7 +86,8 @@ public struct DataTable<Row>: HTML where Row: Sendable {
                                 DataTableHeader(
                                     column: column,
                                     sort: sort,
-                                    basePath: basePath
+                                    basePath: basePath,
+                                    queryItems: queryItems
                                 )
                             }
                         }
@@ -107,6 +115,7 @@ private struct DataTableHeader<Row>: HTML where Row: Sendable {
     let column: DataTableColumn<Row>
     let sort: SortSpec
     let basePath: String
+    let queryItems: [(String, String)]
 
     var body: some HTML {
         th(
@@ -118,7 +127,7 @@ private struct DataTableHeader<Row>: HTML where Row: Sendable {
             if column.isSortable {
                 let nextSpec = sort.toggling(column.key)
                 a(
-                    .href("\(basePath)?sort=\(nextSpec.encoded)"),
+                    .href(buildSortHref(nextSpec: nextSpec)),
                     .class("inline-flex items-center gap-1 hover:text-gray-900")
                 ) {
                     column.label
@@ -130,6 +139,24 @@ private struct DataTableHeader<Row>: HTML where Row: Sendable {
                 column.label
             }
         }
+    }
+
+    /// Builds the per-header sort URL. Extra query items are sorted by
+    /// name so the rendered HTML stays deterministic across iterations of
+    /// `[(String, String)]`, then encoded ahead of `sort=` so the
+    /// existing one-arg `?sort=…` parsing still works.
+    private func buildSortHref(nextSpec: SortSpec) -> String {
+        let sorted =
+            queryItems
+            .filter { !$0.1.isEmpty }
+            .sorted { $0.0 < $1.0 }
+        let extras = sorted.map { name, value in
+            let encodedValue =
+                value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? value
+            return "\(name)=\(encodedValue)"
+        }
+        let parts = extras + ["sort=\(nextSpec.encoded)"]
+        return "\(basePath)?\(parts.joined(separator: "&"))"
     }
 }
 

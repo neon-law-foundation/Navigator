@@ -123,6 +123,37 @@ struct DataTableTests {
         #expect(occurrences == 1)
     }
 
+    @Test("extra query items are round-tripped through every sort link")
+    func extraQueryItemsRideOnSortLinks() {
+        let html = DataTable<FixtureRow>(
+            columns: columns,
+            rows: rows,
+            sort: .single("name", .ascending),
+            basePath: "/things",
+            queryItems: [("q", "alpha bravo"), ("status", "active")]
+        ).render()
+
+        // Active column flips to descending; extras precede sort, sorted
+        // by name. Spaces percent-encode as `%20`.
+        #expect(html.contains(#"href="/things?q=alpha%20bravo&amp;status=active&amp;sort=-name""#))
+        // Inactive sortable column carries the same extras.
+        #expect(html.contains(#"href="/things?q=alpha%20bravo&amp;status=active&amp;sort=count""#))
+    }
+
+    @Test("empty extra query item values are skipped so blank filters do not leak")
+    func emptyQueryItemsAreSkipped() {
+        let html = DataTable<FixtureRow>(
+            columns: columns,
+            rows: rows,
+            sort: SortSpec(),
+            basePath: "/things",
+            queryItems: [("q", "")]
+        ).render()
+
+        #expect(html.contains(#"href="/things?sort=name""#))
+        #expect(!html.contains("q="))
+    }
+
     @Test("data-column-key attribute is set on every header for testability")
     func headerHasColumnKeyAttribute() {
         let html = DataTable<FixtureRow>(
