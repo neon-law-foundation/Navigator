@@ -43,6 +43,16 @@ only be expressed in engine-specific SQL, drop the feature rather than
 adding the SQL — the code path must look the same regardless of which
 backend is configured.
 
+### JSONB queries
+
+Fluent's portable query builder is sufficient for every current read path.
+JSONB-specific operators (`@>`, GIN, `jsonb_path_*`) and any raw SQL
+helpers stay deferred until a concrete read path requires more than
+O(N) Swift-side filtering on a JSONB column. Today, `RetainerRepository`
+and `Notation.hasActiveAssignment` pull rows with Fluent and filter in
+Swift — this is acceptable for the row counts we host. Re-open the
+discussion before introducing the first JSONB operator.
+
 ## Targets
 
 - **Library** modules expose the legal standards, rules, data layer, and
