@@ -14,15 +14,33 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "inbox")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: InboxIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? InboxIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
-        let all = try await EmailMessage.query(on: db)
-            .sort(\.$receivedAt, .descending)
-            .all()
+        let all = try await EmailMessage.query(on: db).all()
         let inbound = all.filter { $0.direction == .inbound }
+        let processed = InboxIndexPage.sorted(
+            InboxIndexPage.filtered(inbound, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            InboxIndexPage(brand: brand, messages: inbound, flash: flash)
+            InboxIndexPage(
+                brand: brand,
+                messages: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

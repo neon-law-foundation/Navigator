@@ -12,10 +12,30 @@ func registerAdminPeopleRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "people")
 
     group.get { req -> HTMLResponse in
-        let people = try await loadPeople(req: req)
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: PeopleIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? PeopleIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
+        let all = try await loadPeople(req: req)
+        let sorted = PeopleIndexPage.sorted(
+            PeopleIndexPage.filtered(all, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            PeopleIndexPage(brand: brand, people: people, flash: flash)
+            PeopleIndexPage(
+                brand: brand,
+                people: sorted,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 
