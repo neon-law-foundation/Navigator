@@ -60,15 +60,82 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
             req: req,
             project: project
         )
+        let availablePeople = try await loadAvailablePeople(req: req, exclude: assignments)
+        let assignmentError =
+            (try? req.query.get(String.self, at: "assignment_error")).map { decodeFlash($0) }
         return HTMLResponse {
             ProjectShowPage(
                 brand: brand,
                 project: project,
                 assignments: assignments,
                 documents: documents,
-                gitRepositories: repos
+                gitRepositories: repos,
+                availablePeople: availablePeople,
+                assignmentError: assignmentError
             )
         }
+    }
+
+    // Create assignment
+    group.post(":id", "assignments") { req -> Response in
+        let project = try await loadProject(req: req)
+        let payload = (try? req.content.decode(AssignmentPayload.self)) ?? .empty
+        let db = try await requireDatabaseService(req).db
+        guard let personIDString = payload.personId, let personID = UUID(uuidString: personIDString),
+            try await Person.find(personID, on: db) != nil
+        else {
+            let flash = encodeFlash("Pick a person.")
+            return req.redirect(
+                to: "/admin/projects/\(project.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        guard let roleString = payload.role, let role = ProjectRole(rawValue: roleString) else {
+            let flash = encodeFlash("Pick a role.")
+            return req.redirect(
+                to: "/admin/projects/\(project.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        let existing = try await PersonProjectRole.query(on: db)
+            .filter(\.$person.$id == personID)
+            .filter(\.$project.$id == project.id!)
+            .first()
+        if existing != nil {
+            let flash = encodeFlash("That person is already assigned to this project.")
+            return req.redirect(
+                to: "/admin/projects/\(project.id!.uuidString)?assignment_error=\(flash)",
+                redirectType: .normal
+            )
+        }
+        let row = PersonProjectRole()
+        row.$person.id = personID
+        row.$project.id = project.id!
+        row.role = role
+        try await row.save(on: db)
+        return req.redirect(
+            to: "/admin/projects/\(project.id!.uuidString)",
+            redirectType: .normal
+        )
+    }
+
+    // Delete assignment
+    group.on(.DELETE, ":id", "assignments", ":assignment_id") { req -> Response in
+        let project = try await loadProject(req: req)
+        guard let raw = req.parameters.get("assignment_id"), let id = UUID(uuidString: raw) else {
+            throw Abort(.badRequest, reason: "Invalid assignment id.")
+        }
+        let db = try await requireDatabaseService(req).db
+        guard let assignment = try await PersonProjectRole.find(id, on: db),
+            assignment.$project.id == project.id
+        else {
+            throw Abort(.notFound)
+        }
+        try await assignment.delete(on: db)
+        return req.redirect(
+            to: "/admin/projects/\(project.id!.uuidString)",
+            redirectType: .normal
+        )
     }
 
     // Edit
@@ -255,6 +322,28 @@ private func loadProjectAssociations(
         .filter(\.$project.$id == projectID)
         .all()
     return try await (assignments, documents, repos)
+}
+
+/// Loads every person not already assigned to the project. Powers the
+/// assign-a-person dropdown on the project show page.
+private func loadAvailablePeople(
+    req: Request,
+    exclude assignments: [PersonProjectRole]
+) async throws -> [Person] {
+    let db = try await requireDatabaseService(req).db
+    let assignedIDs = Set(assignments.map { $0.$person.id })
+    return try await Person.query(on: db).sort(\.$name).all()
+        .filter { person in
+            guard let id = person.id else { return true }
+            return !assignedIDs.contains(id)
+        }
+}
+
+private struct AssignmentPayload: Content {
+    var personId: String?
+    var role: String?
+
+    static let empty = AssignmentPayload(personId: nil, role: nil)
 }
 
 /// Brings the ergonomic-but-repetitive `databaseService` precondition into

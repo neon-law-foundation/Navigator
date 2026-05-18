@@ -14,6 +14,8 @@ struct ProjectShowPage: HTML {
     let assignments: [PersonProjectRole]
     let documents: [Document]
     let gitRepositories: [GitRepository]
+    let availablePeople: [Person]
+    let assignmentError: String?
 
     private var projectID: String { project.id?.uuidString ?? "" }
 
@@ -54,16 +56,74 @@ struct ProjectShowPage: HTML {
             }
             section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "People" }
+                if let assignmentError {
+                    FormErrors([assignmentError])
+                }
                 if assignments.isEmpty {
-                    p(.class("text-sm text-gray-500")) { "No people assigned to this project yet." }
+                    p(.class("text-sm text-gray-500 mb-4")) {
+                        "No people assigned to this project yet."
+                    }
                 } else {
-                    ul(.class("space-y-2 text-sm")) {
+                    ul(.class("space-y-2 text-sm mb-6")) {
                         for assignment in assignments {
-                            li(.custom(name: "data-role", value: assignment.role.rawValue)) {
-                                span(.class("font-medium text-gray-900")) { assignment.person.name }
-                                span(.class("text-gray-500")) { " — \(assignment.role.rawValue)" }
+                            li(
+                                .class("flex items-center justify-between"),
+                                .custom(name: "data-role", value: assignment.role.rawValue),
+                                .custom(
+                                    name: "data-person-id",
+                                    value: assignment.$person.id.uuidString
+                                )
+                            ) {
+                                div {
+                                    span(.class("font-medium text-gray-900")) {
+                                        assignment.person.name
+                                    }
+                                    span(.class("text-gray-500")) {
+                                        " — \(assignment.role.rawValue)"
+                                    }
+                                }
+                                FormLayout(
+                                    action:
+                                        "/admin/projects/\(projectID)/assignments/\(assignment.id?.uuidString ?? "")",
+                                    method: .delete
+                                ) {
+                                    button(
+                                        .type(.submit),
+                                        .class("text-xs text-red-600 hover:underline")
+                                    ) { "Remove" }
+                                }
                             }
                         }
+                    }
+                }
+                div(.class("border-t border-gray-200 pt-4")) {
+                    p(.class("text-sm font-medium text-gray-700 mb-2")) { "Assign a person" }
+                    FormLayout(
+                        action: "/admin/projects/\(projectID)/assignments",
+                        method: .post
+                    ) {
+                        div(.class("grid grid-cols-2 gap-3")) {
+                            SelectField(
+                                name: "personId",
+                                label: "Person",
+                                options: availablePeople.map {
+                                    SelectOption(
+                                        value: $0.id?.uuidString ?? "",
+                                        label: $0.name
+                                    )
+                                },
+                                required: true,
+                                includeBlank: true,
+                                blankLabel: "Pick a person\u{2026}"
+                            )
+                            SelectField(
+                                ProjectRole.self,
+                                name: "role",
+                                label: "Role",
+                                required: true
+                            )
+                        }
+                        SubmitButton("Assign", variant: .primary)
                     }
                 }
             }
