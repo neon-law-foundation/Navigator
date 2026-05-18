@@ -16,6 +16,7 @@ struct ProjectShowPage: HTML {
     let gitRepositories: [GitRepository]
     let availablePeople: [Person]
     let assignmentError: String?
+    let documentError: String?
     let activity: [AdminActivityEvent]
 
     private var projectID: String { project.id?.uuidString ?? "" }
@@ -130,13 +131,66 @@ struct ProjectShowPage: HTML {
             }
             section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Documents" }
+                if documentError != nil {
+                    FormErrors([documentError ?? ""])
+                }
                 if documents.isEmpty {
-                    p(.class("text-sm text-gray-500")) { "No documents on this project." }
+                    p(.class("text-sm text-gray-500 mb-4")) {
+                        "No documents on this project."
+                    }
                 } else {
-                    ul(.class("space-y-1 text-sm")) {
+                    ul(.class("space-y-2 text-sm mb-6")) {
                         for doc in documents {
-                            li { doc.title }
+                            li(
+                                .class("flex items-center justify-between"),
+                                .custom(
+                                    name: "data-document-id",
+                                    value: doc.id?.uuidString ?? ""
+                                )
+                            ) {
+                                a(
+                                    .href("/admin/documents/\(doc.id?.uuidString ?? "")/download"),
+                                    .class("text-indigo-700 hover:underline")
+                                ) { doc.title }
+                                FormLayout(
+                                    action: "/admin/documents/\(doc.id?.uuidString ?? "")",
+                                    method: .delete
+                                ) {
+                                    button(
+                                        .type(.submit),
+                                        .class("text-xs text-red-600 hover:underline")
+                                    ) { "Remove" }
+                                }
+                            }
                         }
+                    }
+                }
+                div(.class("border-t border-gray-200 pt-4")) {
+                    p(.class("text-sm font-medium text-gray-700 mb-2")) { "Upload a document" }
+                    FormLayout(
+                        action: "/admin/projects/\(projectID)/documents",
+                        method: .post,
+                        encoding: .multipart
+                    ) {
+                        TextField(
+                            name: "title",
+                            label: "Title",
+                            required: true
+                        )
+                        div(.class("mb-4")) {
+                            Elementary.label(
+                                .for("field-file"),
+                                .class("block text-sm font-medium text-gray-700 mb-1")
+                            ) { "File" }
+                            input(
+                                .id("field-file"),
+                                .name("file"),
+                                .type(.file),
+                                .required,
+                                .class("block w-full text-sm")
+                            )
+                        }
+                        SubmitButton("Upload", variant: .primary)
                     }
                 }
             }
