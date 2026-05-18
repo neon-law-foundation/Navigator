@@ -212,6 +212,7 @@ let package = Package(
                 "NavigatorOIDCMiddleware",
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "Queues", package: "queues"),
+                .product(name: "VaporTesting", package: "vapor"),
             ]
         ),
         .testTarget(
