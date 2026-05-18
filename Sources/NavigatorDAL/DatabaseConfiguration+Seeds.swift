@@ -164,43 +164,31 @@ extension NavigatorDALConfiguration {
                     continue
                 }
 
-                guard let title = yamlStruct.title, !title.isEmpty else {
-                    logger.warning("Missing title in \(fileURL.lastPathComponent), skipping")
-                    continue
-                }
-
-                guard let respondentTypeRaw = yamlStruct.respondentType,
-                    let respondentType = RespondentType(rawValue: respondentTypeRaw)
-                else {
-                    logger.warning(
-                        "Missing/invalid respondent_type in \(fileURL.lastPathComponent), skipping"
-                    )
-                    continue
-                }
-
-                guard let (frontmatter, markdownContent) = parser.parse(content) else {
+                guard let (_, markdownContent) = parser.parse(content) else {
                     logger.warning("Could not parse frontmatter in \(fileURL.lastPathComponent), skipping")
                     continue
                 }
 
-                let code = exampleCode(for: fileURL, relativeTo: examplesURL)
-                let description = yamlStruct.description ?? ""
+                let derivedCode = exampleCode(for: fileURL, relativeTo: examplesURL)
+                let frontmatter = Frontmatter(
+                    title: yamlStruct.title,
+                    respondentType: yamlStruct.respondentType,
+                    code: derivedCode,
+                    confidential: yamlStruct.confidential ?? false,
+                    description: yamlStruct.description
+                )
 
                 _ = try await service.createVersion(
                     gitRepositoryID: repoID,
-                    code: code,
                     version: "seed-v1",
-                    title: title,
-                    description: description,
-                    respondentType: respondentType,
-                    markdownContent: markdownContent,
                     frontmatter: frontmatter,
-                    questionnaire: yamlStruct.questionnaire ?? [:],
-                    workflow: yamlStruct.workflow ?? [:],
+                    markdownContent: markdownContent,
+                    questionnaire: yamlStruct.questionnaire ?? Questionnaire(),
+                    workflow: yamlStruct.workflow ?? Workflow(),
                     ownerID: nil
                 )
 
-                logger.info("Seeded template: \(code)")
+                logger.info("Seeded template: \(derivedCode)")
             } catch TemplateError.versionAlreadyExists {
                 logger.debug("Template already seeded, skipping: \(fileURL.lastPathComponent)")
             } catch TemplateError.titleAlreadyExists {
@@ -208,8 +196,11 @@ extension NavigatorDALConfiguration {
                     "Template title already exists, skipping: \(fileURL.lastPathComponent)"
                 )
             } catch {
+                // Use the unredacted debug description so PSQLError reaches the log with
+                // SQLSTATE + bound metadata. See note at the per-record catch in
+                // `DatabaseConfiguration.swift`.
                 logger.error(
-                    "Failed to seed template from \(fileURL.lastPathComponent): \(error)"
+                    "Failed to seed template from \(fileURL.lastPathComponent): \(String(reflecting: error))"
                 )
             }
         }
@@ -1248,16 +1239,18 @@ extension NavigatorDALConfiguration {
 // MARK: - Private Types
 
 private struct ExampleTemplateYAML: Decodable {
-    let title: String?
+    let title: String
     let description: String?
-    let respondentType: String?
-    let questionnaire: [String: [String: String]]?
-    let workflow: [String: [String: String]]?
+    let respondentType: RespondentType
+    let confidential: Bool?
+    let questionnaire: Questionnaire?
+    let workflow: Workflow?
 
     enum CodingKeys: String, CodingKey {
         case title
         case description
         case respondentType = "respondent_type"
+        case confidential
         case questionnaire
         case workflow
     }

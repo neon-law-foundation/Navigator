@@ -13,8 +13,6 @@ private func makeNotation(on db: Database) async throws -> Notation {
     template.workflow = ["BEGIN": ["_": "END"]]
     template.markdownContent = "# Retainer"
     template.description = "A retainer agreement template"
-    template.frontmatter = [:]
-    template.questionnaire = [:]
     template.version = "1.0.0"
     try await template.save(on: db)
 

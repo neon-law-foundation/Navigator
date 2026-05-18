@@ -76,10 +76,14 @@ public final class Template: Model, @unchecked Sendable {
 
     /// Structured metadata extracted from the template's frontmatter.
     ///
-    /// Persisted as a JSONB document via ``JSONStored``; access the dictionary
-    /// via `frontmatter.value`.
+    /// Persisted as a JSONB document via ``JSONStored``; access the typed
+    /// fields via `frontmatter.value`. The top-level Template columns
+    /// (``title``, ``code``, ``respondentType``, ``description``) mirror the
+    /// values in this struct as denormalised index columns; they are written
+    /// from the same `Frontmatter` instance by
+    /// ``TemplateService/createVersion(gitRepositoryID:version:frontmatter:markdownContent:questionnaire:workflow:ownerID:)``.
     @Field(key: "frontmatter")
-    public var frontmatter: JSONStored<[String: String]>
+    public var frontmatter: JSONStored<Frontmatter>
 
     /// The git commit SHA from the source repository.
     ///
@@ -105,23 +109,20 @@ public final class Template: Model, @unchecked Sendable {
     @OptionalParent(key: "owner_id")
     public var owner: Entity?
 
-    /// The questionnaire state machine for this template, stored as a raw YAML state map.
+    /// The questionnaire state machine for this template.
     ///
-    /// Keys are state names (e.g. `"BEGIN"`, `"name"`, `"END"`); values are transition maps
-    /// from condition strings to destination state names. Persisted as a JSONB
-    /// document via ``JSONStored``; access via `questionnaire.value`.
+    /// Persisted as a JSONB document via ``JSONStored``; access via
+    /// `questionnaire.value`. See ``Questionnaire`` for the typed surface.
     @Field(key: "questionnaire")
-    public var questionnaire: JSONStored<[String: [String: String]]>
+    public var questionnaire: JSONStored<Questionnaire>
 
-    /// The workflow state machine for this template, stored as a raw YAML state map.
+    /// The workflow state machine for this template.
     ///
-    /// Keys are state names (e.g. `"BEGIN"`, `"staff_review"`, `"END"`); values are
-    /// transition maps from condition strings to destination state names. The actor class
-    /// for each state is derived at runtime from the state name prefix via
-    /// ``resolveWorkflowStep(stateName:transitions:)``. Persisted as a JSONB
-    /// document via ``JSONStored``; access via `workflow.value`.
+    /// Persisted as a JSONB document via ``JSONStored``; access via
+    /// `workflow.value`. See ``Workflow`` for the typed surface — including
+    /// ``Workflow/step(at:)`` which dispatches to a concrete ``WorkflowStep``.
     @Field(key: "workflow")
-    public var workflow: JSONStored<[String: [String: String]]>
+    public var workflow: JSONStored<Workflow>
 
     /// The timestamp when this template version was created.
     @Timestamp(key: "inserted_at", on: .create)
@@ -131,10 +132,17 @@ public final class Template: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     public var updatedAt: Date?
 
-    /// Creates a new template instance.
+    /// Creates an empty template instance.
+    ///
+    /// Required by Fluent so rows can be decoded before fields are populated.
+    /// All three JSONB columns are seeded with empty/placeholder values;
+    /// production callers go through
+    /// ``TemplateService/createVersion(gitRepositoryID:version:frontmatter:markdownContent:questionnaire:workflow:ownerID:)``
+    /// which overwrites them before the row is saved.
     public init() {
-        self.questionnaire = [:]
-        self.workflow = [:]
+        self.frontmatter = JSONStored(.placeholder)
+        self.questionnaire = JSONStored(Questionnaire())
+        self.workflow = JSONStored(Workflow())
     }
 
     /// Sets the owner to Neon Law Foundation.

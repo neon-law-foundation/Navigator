@@ -288,8 +288,8 @@ struct APIHandler: APIProtocol {
                 title: template.title,
                 description: template.description,
                 respondentType: template.respondentType.rawValue,
-                flowStateCount: template.questionnaire.value.count,
-                alignmentStateCount: template.workflow.value.count
+                flowStateCount: template.questionnaire.value.states.count,
+                alignmentStateCount: template.workflow.value.states.count
             )
         }
         return .ok(.init(body: .json(summaries)))
@@ -336,20 +336,20 @@ struct APIHandler: APIProtocol {
         let personID: UUID? = bodyPersonID ?? user.person.id
         let entityID: UUID? = bodyEntityID
 
-        let beginTransitions = template.questionnaire.value["BEGIN"] ?? [:]
-        let firstState: String
-        if let explicit = beginTransitions["_"] {
+        let beginTransitions = template.questionnaire.value.begin ?? TransitionMap()
+        let firstState: StateName
+        if let explicit = beginTransitions[.unconditional] {
             firstState = explicit
-        } else if let first = beginTransitions.values.first {
+        } else if let first = beginTransitions.transitions.values.first {
             firstState = first
         } else {
-            firstState = "END"
+            firstState = .end
         }
 
         let initialEvent = NotationEvent(
-            fromState: "BEGIN",
-            condition: "_",
-            toState: firstState,
+            fromState: StateName.begin.rawValue,
+            condition: Condition.unconditional.rawValue,
+            toState: firstState.rawValue,
             actor: .system,
             at: Date()
         )
@@ -477,21 +477,29 @@ struct APIHandler: APIProtocol {
         }
 
         let questionnaire = template.questionnaire.value
-        guard let transitions = questionnaire[currentState] else {
+        let currentStateName = StateName(rawValue: currentState)
+        guard let transitions = questionnaire.transitions(from: currentStateName) else {
             return .undocumented(statusCode: 422, .init())
         }
 
         let answerPayload = body.answer
-        let condition: String
+        let condition: Condition
         switch answerPayload._type {
         case "choice":
-            condition = answerPayload.choiceValue ?? "continue"
+            condition = Condition(rawValue: answerPayload.choiceValue ?? "continue")
         default:
+            let conditionKeys = transitions.transitions.keys
             condition =
-                transitions.keys.contains("continue") ? "continue" : (transitions.keys.first ?? "_")
+                conditionKeys.contains(Condition(rawValue: "continue"))
+                ? Condition(rawValue: "continue")
+                : (conditionKeys.first ?? .unconditional)
         }
 
-        guard let nextState = transitions[condition] ?? transitions["_"] ?? transitions.values.first
+        guard
+            let nextState =
+                transitions[condition]
+                ?? transitions[.unconditional]
+                ?? transitions.transitions.values.first
         else {
             return .undocumented(statusCode: 422, .init())
         }
@@ -539,8 +547,8 @@ struct APIHandler: APIProtocol {
 
         let stepEvent = NotationEvent(
             fromState: currentState,
-            condition: condition,
-            toState: nextState,
+            condition: condition.rawValue,
+            toState: nextState.rawValue,
             actor: actor,
             at: Date()
         )
@@ -891,7 +899,7 @@ struct APIHandler: APIProtocol {
         let currentState = stateHistory.last?.toState ?? "BEGIN"
         let isFlowComplete = currentState == "END"
 
-        let nonSentinelStates = questionnaire.keys.filter { $0 != "BEGIN" && $0 != "END" }
+        let nonSentinelStates = questionnaire.states.keys.filter { !$0.isSentinel }
         let totalFlowStates = max(1, nonSentinelStates.count)
         let answeredCount = max(0, stateHistory.count - 1)
         let progressPercent = Double(answeredCount) / Double(totalFlowStates)

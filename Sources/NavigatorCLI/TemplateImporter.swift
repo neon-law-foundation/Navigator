@@ -31,57 +31,55 @@ public struct TemplateImporter {
 
         let content = try String(contentsOf: fileURL, encoding: .utf8)
 
-        guard let (frontmatter, markdownContent) = parser.parse(content) else {
+        guard let yaml = try parser.parseYAML(content, as: TemplateYAML.self) else {
             throw TemplateError.invalidFrontmatter("File must have valid YAML frontmatter")
         }
 
-        guard let title = frontmatter["title"], !title.trimmingCharacters(in: .whitespaces).isEmpty
-        else {
-            throw TemplateError.missingRequiredField("title")
+        guard let (_, markdownContent) = parser.parse(content) else {
+            throw TemplateError.invalidFrontmatter("File must have valid YAML frontmatter")
         }
-
-        guard
-            let description = frontmatter["description"],
-            !description.trimmingCharacters(in: .whitespaces).isEmpty
-        else {
-            throw TemplateError.missingRequiredField("description")
-        }
-
-        guard let respondentTypeRaw = frontmatter["respondent_type"],
-            let respondentType = RespondentType(rawValue: respondentTypeRaw)
-        else {
-            throw TemplateError.missingRequiredField("respondent_type")
-        }
-
-        let yaml = try parser.parseYAML(content, as: TemplateYAML.self)
-        let questionnaire = yaml?.questionnaire ?? [:]
-        let workflow = yaml?.workflow ?? [:]
 
         let code = fileURL.deletingPathExtension().lastPathComponent
-
-        logger.debug("Creating template with code: \(code), title: \(title)")
-
-        let template = try await templateService.createVersionWithValidation(
-            gitRepositoryID: gitRepositoryID,
+        let frontmatter = Frontmatter(
+            title: yaml.title,
+            respondentType: yaml.respondentType,
             code: code,
+            confidential: yaml.confidential ?? false,
+            description: yaml.description
+        )
+
+        logger.debug("Creating template with code: \(code), title: \(yaml.title)")
+
+        let template = try await templateService.createVersion(
+            gitRepositoryID: gitRepositoryID,
             version: version,
-            title: title,
-            description: description,
-            respondentType: respondentType,
-            markdownContent: markdownContent,
             frontmatter: frontmatter,
-            questionnaire: questionnaire,
-            workflow: workflow,
+            markdownContent: markdownContent,
+            questionnaire: yaml.questionnaire ?? Questionnaire(),
+            workflow: yaml.workflow ?? Workflow(),
             ownerID: nil
         )
 
-        logger.info("Successfully imported template: \(code) - \(title)")
+        logger.info("Successfully imported template: \(code) - \(yaml.title)")
 
         return template
     }
 }
 
 private struct TemplateYAML: Decodable {
-    let questionnaire: [String: [String: String]]?
-    let workflow: [String: [String: String]]?
+    let title: String
+    let description: String?
+    let respondentType: RespondentType
+    let confidential: Bool?
+    let questionnaire: Questionnaire?
+    let workflow: Workflow?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case description
+        case respondentType = "respondent_type"
+        case confidential
+        case questionnaire
+        case workflow
+    }
 }

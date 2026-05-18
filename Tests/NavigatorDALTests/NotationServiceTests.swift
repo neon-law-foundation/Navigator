@@ -11,7 +11,7 @@ struct NotationServiceTests {
     // MARK: - Helpers
 
     private func makeTemplate(
-        workflow: [String: [String: String]],
+        workflow: Workflow,
         respondentType: RespondentType = .entity,
         on db: Database
     ) async throws -> (Template, Entity) {
@@ -54,8 +54,6 @@ struct NotationServiceTests {
         template.description = "A test template"
         template.respondentType = respondentType
         template.markdownContent = "# Test"
-        template.frontmatter = [:]
-        template.questionnaire = [:]
         template.workflow = JSONStored(workflow)
         try await template.save(on: db)
 
@@ -67,7 +65,7 @@ struct NotationServiceTests {
     @Test("createNotation creates initial system event from BEGIN")
     func testCreateNotationCreatesInitialEvent() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["_": "END"],
             ]
@@ -94,7 +92,7 @@ struct NotationServiceTests {
     @Test("appendEvent appends a valid transition")
     func testAppendEventAppends() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["approved": "END"],
             ]
@@ -128,7 +126,7 @@ struct NotationServiceTests {
     @Test("appendEvent rejects append to closed notation")
     func testAppendEventRejectsClosed() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "END"]
             ]
             let (template, entity) = try await makeTemplate(workflow: workflow, on: db)
@@ -156,7 +154,7 @@ struct NotationServiceTests {
     @Test("appendEvent rejects wrong fromState")
     func testAppendEventRejectsWrongFromState() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["_": "END"],
             ]
@@ -183,7 +181,7 @@ struct NotationServiceTests {
     @Test("appendEvent rejects invalid condition")
     func testAppendEventRejectsInvalidCondition() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["approved": "END"],
             ]
@@ -215,7 +213,7 @@ struct NotationServiceTests {
     @Test("appendEvent rejects entity actor for staff_review state")
     func testAppendEventRejectsEntityActorForStaffReviewState() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["_": "END"],
             ]
@@ -243,7 +241,7 @@ struct NotationServiceTests {
     @Test("appendEvent rejects system actor for staff_review state")
     func testAppendEventRejectsSystemActorForStaffReviewState() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "staff_review"],
                 "staff_review": ["_": "END"],
             ]
@@ -270,7 +268,7 @@ struct NotationServiceTests {
     @Test("appendEvent allows respondent entity actor for notarization state")
     func testAppendEventAllowsRespondentEntityActorForNotarizationState() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "notarization__for_trustee"],
                 "notarization__for_trustee": ["yes": "END"],
             ]
@@ -299,7 +297,7 @@ struct NotationServiceTests {
     @Test("appendEvent throws for unregistered step prefix")
     func testAppendEventThrowsForUnregisteredPrefix() async throws {
         try await withDatabase { db in
-            let workflow: [String: [String: String]] = [
+            let workflow: Workflow = [
                 "BEGIN": ["_": "payment__for_filing"],
                 "payment__for_filing": ["yes": "END"],
             ]
