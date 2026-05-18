@@ -676,6 +676,15 @@ components:
             - "null"
           format: date-time
 
+    QuestionChoices:
+      type: object
+      description: >
+        Choice map for a Question whose questionType is radio, select, or
+        multi_select. Keys are the stored value; values are the display
+        label. Mirrors `Sources/NavigatorDAL/Schemas/QuestionChoices.schema.json`.
+      additionalProperties:
+        type: string
+
     QuestionType:
       type: string
       enum:
