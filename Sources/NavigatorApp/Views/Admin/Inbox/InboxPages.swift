@@ -155,10 +155,12 @@ struct InboxIndexPage: HTML {
     }
 }
 
-/// `/admin/inbox/:id` — show a single email plus the acknowledge form.
+/// `/admin/inbox/:id` — show a single email plus the acknowledge form,
+/// reply / forward shortcuts, and the rest of the conversation thread.
 struct InboxShowPage: HTML {
     let brand: any Brand
     let message: EmailMessage
+    let thread: [EmailMessage]
 
     private var messageID: String { message.id?.uuidString ?? "" }
 
@@ -177,6 +179,10 @@ struct InboxShowPage: HTML {
                         "Reply",
                         href: "/admin/messages/new?reply_to=\(messageID)",
                         variant: .primary
+                    )
+                    LinkButton(
+                        "Forward",
+                        href: "/admin/messages/new?forward=\(messageID)"
                     )
                     if message.acknowledgedAt == nil {
                         FormLayout(
@@ -214,7 +220,7 @@ struct InboxShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Body" }
                 if let text = message.textBody, !text.isEmpty {
                     pre(.class("text-sm text-gray-800 whitespace-pre-wrap")) { text }
@@ -224,6 +230,7 @@ struct InboxShowPage: HTML {
                     p(.class("text-sm text-gray-500")) { "(no body)" }
                 }
             }
+            MessageThreadSection(thread: thread, currentMessageID: message.id)
         }
     }
 }

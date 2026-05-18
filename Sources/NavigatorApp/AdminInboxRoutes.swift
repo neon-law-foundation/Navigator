@@ -46,7 +46,12 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
 
     group.get(":id") { req -> HTMLResponse in
         let message = try await loadInboxMessage(req: req)
-        return HTMLResponse { InboxShowPage(brand: brand, message: message) }
+        let db = try await requireDatabaseService(req).db
+        let thread = try await EmailMessageRepository(database: db)
+            .findByThreadId(message.threadId)
+        return HTMLResponse {
+            InboxShowPage(brand: brand, message: message, thread: thread)
+        }
     }
 
     group.post(":id", "acknowledge") { req -> Response in
