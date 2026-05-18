@@ -2,25 +2,12 @@ import FluentKit
 import Foundation
 import NavigatorDAL
 
-/// One event in a project's audit-shaped activity timeline.
-///
-/// Derived at read time from the existing related rows
-/// (`PersonProjectRole`, `Document`, `GitRepository`, `Disclosure`) — no
-/// new audit table is involved. The kind drives the icon and color on
-/// the rendered timeline; the description carries the one-line summary;
-/// `href` is the optional deep link to the related resource.
-struct ProjectActivityEvent: Sendable, Equatable {
-    let kind: ProjectActivityKind
-    let timestamp: Date
-    let description: String
-    let href: String?
-}
-
 /// Discrete kinds of events the project activity timeline surfaces.
 ///
-/// Kept narrow on purpose — each case has a stable color in the UI and
-/// is something an auditor would recognize as a real change to the
-/// matter.
+/// Each case carries a stable `rawValue` (test handle), a human-readable
+/// `label` (chip text), and a Tailwind color set (chip palette). The
+/// loader translates DAL rows into ``AdminActivityEvent`` rows that
+/// reference these.
 enum ProjectActivityKind: String, Sendable {
     case created
     case updated
@@ -39,42 +26,54 @@ enum ProjectActivityKind: String, Sendable {
         case .disclosureFiled: "Disclosure filed"
         }
     }
+
+    var chipPalette: String {
+        switch self {
+        case .created: "bg-green-100 text-green-800"
+        case .updated: "bg-blue-100 text-blue-800"
+        case .personAssigned: "bg-indigo-100 text-indigo-800"
+        case .documentAdded: "bg-amber-100 text-amber-800"
+        case .repositoryLinked: "bg-purple-100 text-purple-800"
+        case .disclosureFiled: "bg-rose-100 text-rose-800"
+        }
+    }
+
+    func event(at timestamp: Date, description: String, href: String? = nil) -> AdminActivityEvent {
+        AdminActivityEvent(
+            kind: rawValue,
+            label: label,
+            chipPalette: chipPalette,
+            timestamp: timestamp,
+            description: description,
+            href: href
+        )
+    }
 }
 
 /// Loads every activity event for a project, newest-first.
 ///
-/// `Project.insertedAt` and `Project.updatedAt` provide the "created"
-/// and "updated" markers; the related rows' own `insertedAt` timestamps
-/// drive the rest. A project that has never been edited after creation
-/// emits only one timestamp (no spurious "updated" event when the row
-/// has never been touched after insert).
+/// Pure derivation from existing data — see related rows' `insertedAt`
+/// values. The "updated" event only fires when the row was actually
+/// edited after insert.
 func loadProjectActivity(
     project: Project,
     db: Database
-) async throws -> [ProjectActivityEvent] {
+) async throws -> [AdminActivityEvent] {
     guard let projectID = project.id else { return [] }
-
-    var events: [ProjectActivityEvent] = []
+    var events: [AdminActivityEvent] = []
 
     if let createdAt = project.insertedAt {
         events.append(
-            ProjectActivityEvent(
-                kind: .created,
-                timestamp: createdAt,
-                description: "Project \(project.codename) created.",
-                href: nil
+            ProjectActivityKind.created.event(
+                at: createdAt,
+                description: "Project \(project.codename) created."
             )
         )
-        // Only emit an updated event when the row actually changed
-        // after insert — otherwise the timeline would show two events
-        // that happened at exactly the same instant.
         if let updatedAt = project.updatedAt, updatedAt > createdAt {
             events.append(
-                ProjectActivityEvent(
-                    kind: .updated,
-                    timestamp: updatedAt,
-                    description: "Project details updated.",
-                    href: nil
+                ProjectActivityKind.updated.event(
+                    at: updatedAt,
+                    description: "Project details updated."
                 )
             )
         }
@@ -87,11 +86,9 @@ func loadProjectActivity(
     for a in assignments {
         if let t = a.insertedAt {
             events.append(
-                ProjectActivityEvent(
-                    kind: .personAssigned,
-                    timestamp: t,
-                    description:
-                        "\(a.person.name) assigned as \(a.role.rawValue).",
+                ProjectActivityKind.personAssigned.event(
+                    at: t,
+                    description: "\(a.person.name) assigned as \(a.role.rawValue).",
                     href: "/admin/people/\(a.$person.id.uuidString)"
                 )
             )
@@ -104,11 +101,9 @@ func loadProjectActivity(
     for d in documents {
         if let t = d.insertedAt {
             events.append(
-                ProjectActivityEvent(
-                    kind: .documentAdded,
-                    timestamp: t,
-                    description: "Document \u{201C}\(d.title)\u{201D} added.",
-                    href: nil
+                ProjectActivityKind.documentAdded.event(
+                    at: t,
+                    description: "Document \u{201C}\(d.title)\u{201D} added."
                 )
             )
         }
@@ -120,11 +115,9 @@ func loadProjectActivity(
     for r in repos {
         if let t = r.insertedAt {
             events.append(
-                ProjectActivityEvent(
-                    kind: .repositoryLinked,
-                    timestamp: t,
-                    description: "Repository \(r.repositoryName) linked.",
-                    href: nil
+                ProjectActivityKind.repositoryLinked.event(
+                    at: t,
+                    description: "Repository \(r.repositoryName) linked."
                 )
             )
         }
@@ -137,11 +130,9 @@ func loadProjectActivity(
     for disc in disclosures {
         if let t = disc.insertedAt {
             events.append(
-                ProjectActivityEvent(
-                    kind: .disclosureFiled,
-                    timestamp: t,
-                    description:
-                        "Disclosure filed for \(disc.credential.person.name).",
+                ProjectActivityKind.disclosureFiled.event(
+                    at: t,
+                    description: "Disclosure filed for \(disc.credential.person.name).",
                     href: "/admin/disclosures"
                 )
             )

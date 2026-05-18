@@ -220,6 +220,7 @@ struct EntityShowPage: HTML {
     let people: [PersonEntityRole]
     let availablePeople: [Person]
     let assignmentError: String?
+    let activity: [AdminActivityEvent]
 
     private var entityID: String { entity.id?.uuidString ?? "" }
 
@@ -244,7 +245,7 @@ struct EntityShowPage: HTML {
                     dd(.class("text-gray-900")) { entity.legalEntityType.name }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "People" }
                 if let assignmentError {
                     FormErrors([assignmentError])
@@ -320,6 +321,10 @@ struct EntityShowPage: HTML {
                     }
                 }
             }
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this entity yet."
+            )
         }
     }
 }

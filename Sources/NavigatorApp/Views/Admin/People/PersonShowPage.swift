@@ -8,6 +8,7 @@ struct PersonShowPage: HTML {
     let person: Person
     let projectAssignments: [PersonProjectRole]
     let entityRoles: [PersonEntityRole]
+    let activity: [AdminActivityEvent]
 
     private var personID: String { person.id?.uuidString ?? "" }
 
@@ -52,7 +53,7 @@ struct PersonShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Entity roles" }
                 if entityRoles.isEmpty {
                     p(.class("text-sm text-gray-500")) {
@@ -72,6 +73,10 @@ struct PersonShowPage: HTML {
                     }
                 }
             }
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this person yet."
+            )
         }
     }
 }

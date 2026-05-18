@@ -67,12 +67,15 @@ func registerAdminPeopleRoutes(_ app: Application, brand: any Brand) {
             req: req,
             person: person
         )
+        let db = try await requireDatabaseService(req).db
+        let activity = try await loadPersonActivity(person: person, db: db)
         return HTMLResponse {
             PersonShowPage(
                 brand: brand,
                 person: person,
                 projectAssignments: assignments,
-                entityRoles: entityRoles
+                entityRoles: entityRoles,
+                activity: activity
             )
         }
     }
