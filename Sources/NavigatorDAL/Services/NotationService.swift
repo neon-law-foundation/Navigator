@@ -179,22 +179,24 @@ public actor NotationService {
 
         try await notation.$template.load(on: database)
         let workflow = notation.template.workflow.value
+        let fromStateName = StateName(rawValue: fromState)
+        let conditionKey = Condition(rawValue: condition)
 
-        guard let transitions = workflow[fromState] else {
+        guard let transitions = workflow.transitions(from: fromStateName) else {
             throw NotationError.invalidTransition(fromState: fromState, condition: condition)
         }
 
-        guard let toState = transitions[condition] else {
+        guard let toState = transitions[conditionKey] else {
             throw NotationError.invalidTransition(fromState: fromState, condition: condition)
         }
 
-        let step = try resolveWorkflowStep(stateName: fromState, transitions: transitions)
+        let step = try workflow.step(at: fromStateName)
         try validateActor(actor, class: step.actor, notation: notation)
 
         let event = NotationEvent(
             fromState: fromState,
             condition: condition,
-            toState: toState,
+            toState: toState.rawValue,
             actor: actor,
             at: Date(),
             note: note
@@ -209,19 +211,19 @@ public actor NotationService {
     // MARK: - Private helpers
 
     private func makeInitialEvent(from template: Template) throws -> NotationEvent {
-        let beginTransitions = template.workflow.value["BEGIN"] ?? [:]
-        let toState: String
-        if let explicit = beginTransitions["_"] {
+        let beginTransitions = template.workflow.value.begin ?? TransitionMap()
+        let toState: StateName
+        if let explicit = beginTransitions[.unconditional] {
             toState = explicit
-        } else if beginTransitions.count == 1, let only = beginTransitions.values.first {
+        } else if beginTransitions.count == 1, let only = beginTransitions.transitions.values.first {
             toState = only
         } else {
             throw NotationError.noUniqueBeginTransition(template.code ?? "<unknown>")
         }
         return NotationEvent(
-            fromState: "BEGIN",
-            condition: "_",
-            toState: toState,
+            fromState: StateName.begin.rawValue,
+            condition: Condition.unconditional.rawValue,
+            toState: toState.rawValue,
             actor: .system,
             at: Date()
         )

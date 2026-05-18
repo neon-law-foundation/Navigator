@@ -81,64 +81,69 @@ public actor TemplateService {
         return results.filter { $0.code == code }
     }
 
-    /// Creates a new template version.
+    /// Creates a new template version from a typed ``Frontmatter`` plus the
+    /// questionnaire and workflow state machines.
+    ///
+    /// The first-class Template columns (`title`, `code`, `respondentType`,
+    /// `description`) are denormalised from `frontmatter`. The full
+    /// `Frontmatter` is also stored in the `frontmatter` JSONB column as the
+    /// canonical source of truth.
     ///
     /// - Parameters:
     ///   - gitRepositoryID: The ID of the git repository.
-    ///   - code: Unique code for this template type.
     ///   - version: Git commit SHA.
-    ///   - title: Display title.
-    ///   - description: Brief description.
-    ///   - respondentType: Who can be assigned this template.
+    ///   - frontmatter: Typed YAML frontmatter for the template.
     ///   - markdownContent: The template content.
-    ///   - frontmatter: Structured metadata.
-    ///   - questionnaire: The questionnaire state machine map.
-    ///   - workflow: The workflow state machine map.
+    ///   - questionnaire: The questionnaire state machine.
+    ///   - workflow: The workflow state machine.
     ///   - ownerID: Optional owner entity ID.
     /// - Returns: The created template.
-    /// - Throws: `TemplateError` if the version already exists.
+    /// - Throws: `TemplateError.validationFailed` when ``Frontmatter`` fails
+    ///   structural checks; `TemplateError.versionAlreadyExists` or
+    ///   `TemplateError.titleAlreadyExists` on conflicts with existing rows.
     public func createVersion(
         gitRepositoryID: UUID,
-        code: String,
         version: String,
-        title: String,
-        description: String,
-        respondentType: RespondentType,
+        frontmatter: Frontmatter,
         markdownContent: String,
-        frontmatter: [String: String],
-        questionnaire: [String: [String: String]] = [:],
-        workflow: [String: [String: String]] = [:],
+        questionnaire: Questionnaire = Questionnaire(),
+        workflow: Workflow = Workflow(),
         ownerID: UUID?
     ) async throws -> Template {
+        let validations = validator.validate(frontmatter)
+        if !validations.isEmpty {
+            throw TemplateError.validationFailed(validations)
+        }
+
         let allVersions = try await Template.query(on: database)
             .filter(\.$gitRepository.$id == gitRepositoryID)
             .filter(\.$version == version)
             .all()
 
-        if allVersions.contains(where: { $0.code == code }) {
+        if allVersions.contains(where: { $0.code == frontmatter.code }) {
             throw TemplateError.versionAlreadyExists(
                 repository: gitRepositoryID,
-                code: code,
+                code: frontmatter.code,
                 version: version
             )
         }
 
         let existingWithTitle = try await Template.query(on: database)
             .filter(\.$gitRepository.$id == gitRepositoryID)
-            .filter(\.$title == title)
+            .filter(\.$title == frontmatter.title)
             .first()
 
         if existingWithTitle != nil {
-            throw TemplateError.titleAlreadyExists(title)
+            throw TemplateError.titleAlreadyExists(frontmatter.title)
         }
 
         let template = Template()
         template.$gitRepository.id = gitRepositoryID
-        template.code = code
         template.version = version
-        template.title = title
-        template.description = description
-        template.respondentType = respondentType
+        template.title = frontmatter.title
+        template.code = frontmatter.code
+        template.respondentType = frontmatter.respondentType
+        template.description = frontmatter.description ?? ""
         template.markdownContent = markdownContent
         template.frontmatter = JSONStored(frontmatter)
         template.questionnaire = JSONStored(questionnaire)
@@ -147,63 +152,5 @@ public actor TemplateService {
 
         try await template.save(on: database)
         return template
-    }
-
-    /// Creates a new template version with validation.
-    ///
-    /// Validates all template fields before saving to the database.
-    ///
-    /// - Parameters:
-    ///   - gitRepositoryID: The ID of the git repository.
-    ///   - code: Unique code for this template type.
-    ///   - version: Git commit SHA.
-    ///   - title: Display title.
-    ///   - description: Brief description.
-    ///   - respondentType: Who can be assigned this template.
-    ///   - markdownContent: The template content.
-    ///   - frontmatter: Structured metadata.
-    ///   - questionnaire: The questionnaire state machine map.
-    ///   - workflow: The workflow state machine map.
-    ///   - ownerID: Optional owner entity ID.
-    /// - Returns: The created template.
-    /// - Throws: `TemplateError.validationFailed` if validation fails, or other `TemplateError` types.
-    public func createVersionWithValidation(
-        gitRepositoryID: UUID,
-        code: String,
-        version: String,
-        title: String,
-        description: String,
-        respondentType: RespondentType,
-        markdownContent: String,
-        frontmatter: [String: String],
-        questionnaire: [String: [String: String]] = [:],
-        workflow: [String: [String: String]] = [:],
-        ownerID: UUID?
-    ) async throws -> Template {
-        let validations = validator.validate(
-            title: title,
-            description: description,
-            respondentType: respondentType.rawValue,
-            frontmatter: frontmatter,
-            markdownContent: markdownContent
-        )
-
-        if !validations.isEmpty {
-            throw TemplateError.validationFailed(validations)
-        }
-
-        return try await createVersion(
-            gitRepositoryID: gitRepositoryID,
-            code: code,
-            version: version,
-            title: title,
-            description: description,
-            respondentType: respondentType,
-            markdownContent: markdownContent,
-            frontmatter: frontmatter,
-            questionnaire: questionnaire,
-            workflow: workflow,
-            ownerID: ownerID
-        )
     }
 }

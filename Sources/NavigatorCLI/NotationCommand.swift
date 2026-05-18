@@ -67,7 +67,7 @@ struct NotationCommand: Command {
             }
         }
 
-        var currentState = "BEGIN"
+        var currentState = StateName.begin
         var collectedAnswers: [String: UUID] = [:]
         var answerValues: [String: String] = [:]
 
@@ -75,13 +75,13 @@ struct NotationCommand: Command {
         let questionRepo = QuestionRepository(database: database)
 
         while true {
-            guard let transitions = questionnaire[currentState] else { break }
-            guard let nextState = transitions["_"] else { break }
-            if nextState == "END" { break }
+            guard let transitions = questionnaire.transitions(from: currentState) else { break }
+            guard let nextState = transitions[.unconditional] else { break }
+            if nextState == .end { break }
 
             currentState = nextState
 
-            let question = try await questionRepo.findByCode(currentState)
+            let question = try await questionRepo.findByCode(currentState.rawValue)
             if let question = question {
                 let questionID = try question.requireID()
 
@@ -100,8 +100,8 @@ struct NotationCommand: Command {
                     on: database
                 )
                 let answerID = try answer.requireID()
-                collectedAnswers[currentState] = answerID
-                answerValues[currentState] = value
+                collectedAnswers[currentState.rawValue] = answerID
+                answerValues[currentState.rawValue] = value
             }
         }
 

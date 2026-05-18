@@ -14,8 +14,6 @@ struct RetainerProjectTests {
         template.workflow = ["BEGIN": ["_": "END"]]
         template.markdownContent = "# RP Template"
         template.description = "A retainer project test template"
-        template.frontmatter = [:]
-        template.questionnaire = [:]
         template.version = "1.0.0"
         try await template.save(on: db)
 

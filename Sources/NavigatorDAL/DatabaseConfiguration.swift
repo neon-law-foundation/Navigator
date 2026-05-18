@@ -162,7 +162,13 @@ public struct NavigatorDALConfiguration {
                 )
                 logger.debug("✓ Inserted \(modelName) record \(index + 1)/\(seedData.records.count)")
             } catch {
-                logger.error("✗ Failed to insert \(modelName) record \(index + 1): \(error)")
+                // PSQLError's `description` is redacted ("Generic description to prevent
+                // accidental leakage of sensitive data"); `String(reflecting:)` reaches the
+                // unredacted `debugDescription` (SQLSTATE, message, bound metadata). Safe
+                // here because seed inputs are repo-committed YAML, not user secrets.
+                logger.error(
+                    "✗ Failed to insert \(modelName) record \(index + 1): \(String(reflecting: error))"
+                )
             }
         }
 
