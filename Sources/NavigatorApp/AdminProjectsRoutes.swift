@@ -81,6 +81,8 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
         let availablePeople = try await loadAvailablePeople(req: req, exclude: assignments)
         let assignmentError =
             (try? req.query.get(String.self, at: "assignment_error")).map { decodeFlash($0) }
+        let db = try await requireDatabaseService(req).db
+        let activity = try await loadProjectActivity(project: project, db: db)
         return HTMLResponse {
             ProjectShowPage(
                 brand: brand,
@@ -89,7 +91,8 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
                 documents: documents,
                 gitRepositories: repos,
                 availablePeople: availablePeople,
-                assignmentError: assignmentError
+                assignmentError: assignmentError,
+                activity: activity
             )
         }
     }
