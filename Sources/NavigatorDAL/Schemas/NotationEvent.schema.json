@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navigator.neonlaw.org/schemas/notation-event.schema.json",
+  "title": "NotationEvent",
+  "description": "One workflow transition on a notation. The full audit trail of a notation's lifecycle is its state_history array of these events. A notation is closed when its last event has toState == 'END'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fromState", "condition", "toState", "actor", "at"],
+  "properties": {
+    "fromState": {
+      "type": "string",
+      "description": "State we were in when this event was recorded. Must be a key in template.workflow."
+    },
+    "condition": {
+      "type": "string",
+      "description": "Condition that triggered the transition. Must be a key in template.workflow[fromState]."
+    },
+    "toState": {
+      "type": "string",
+      "description": "Resulting state after the transition. Derived from the workflow and validated against template.workflow[fromState][condition] on write."
+    },
+    "actor": {
+      "$ref": "#/$defs/NotationActor"
+    },
+    "at": {
+      "type": "number",
+      "description": "When this event occurred. Encoded as TimeInterval since the Swift reference date (2001-01-01 UTC), matching JSONEncoder's default Date strategy."
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional human-readable note. Omitted when nil."
+    },
+    "addressID": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The address involved in this event, set on mailroom send/receive events. References addresses.id. Omitted when nil."
+    },
+    "documentURL": {
+      "type": "string",
+      "format": "uri",
+      "description": "The URL of the rendered document, set on document generation events. Omitted when nil."
+    }
+  },
+  "$defs": {
+    "NotationActor": {
+      "title": "NotationActor",
+      "description": "Who triggered this transition. References a real database row — staff are person actors and their role is enforced by the service layer.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "const": "person" },
+            "id": { "type": "string", "format": "uuid" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "const": "entity" },
+            "id": { "type": "string", "format": "uuid" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "system" }
+          }
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "fromState": "BEGIN",
+      "condition": "_",
+      "toState": "staff_review",
+      "actor": { "type": "system" },
+      "at": 762847362.123
+    },
+    {
+      "fromState": "staff_review",
+      "condition": "approved",
+      "toState": "notarization__for_trustee",
+      "actor": { "type": "person", "id": "01234567-89ab-cdef-0123-456789abcdef" },
+      "at": 762847462.0,
+      "note": "Approved by reviewer A"
+    }
+  ]
+}

@@ -87,6 +87,7 @@ let package = Package(
             ],
             resources: [
                 .copy("Examples"),
+                .copy("Schemas"),
                 .copy("Seeds"),
             ]
         ),

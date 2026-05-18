@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navigator.neonlaw.org/schemas/questionnaire.schema.json",
+  "title": "Questionnaire",
+  "description": "A template's questionnaire state machine. Each top-level key is a state name; each value is a TransitionMap of condition → next-state-name. BEGIN and END are reserved sentinel state names. The unconditional transition uses '_' as its condition.",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/$defs/TransitionMap"
+  },
+  "$defs": {
+    "StateName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A state name. 'BEGIN' and 'END' are reserved sentinels. Non-sentinel names may include a kind prefix separated from the suffix by '__' (e.g. 'staff_review__for_trustee')."
+    },
+    "Condition": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A transition condition. The unconditional edge uses '_'; other transitions can carry application-specific labels (e.g. 'yes', 'no')."
+    },
+    "TransitionMap": {
+      "type": "object",
+      "description": "The outgoing edges of a single state, keyed by condition.",
+      "additionalProperties": {
+        "$ref": "#/$defs/StateName"
+      },
+      "minProperties": 0
+    }
+  },
+  "examples": [
+    {
+      "BEGIN": { "_": "person__trustee" },
+      "person__trustee": { "_": "END" }
+    }
+  ]
+}
