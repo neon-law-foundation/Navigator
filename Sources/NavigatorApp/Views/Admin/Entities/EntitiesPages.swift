@@ -6,6 +6,38 @@ struct EntitiesIndexPage: HTML {
     let brand: any Brand
     let entities: [Entity]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["name", "type"]
+    static let defaultSort: SortSpec = .single("name", .ascending)
+
+    static func sorted(_ entities: [Entity], by spec: SortSpec) -> [Entity] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return entities.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "name":
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            case "type":
+                return a.legalEntityType.name.localizedCaseInsensitiveCompare(
+                    b.legalEntityType.name
+                ) == .orderedAscending
+            default:
+                return false
+            }
+        }
+    }
+
+    static func filtered(_ entities: [Entity], by query: String) -> [Entity] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return entities }
+        return entities.filter { $0.name.lowercased().contains(trimmed) }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -20,25 +52,49 @@ struct EntitiesIndexPage: HTML {
                 LinkButton("New entity", href: "/admin/entities/new", variant: .primary)
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/entities",
+                value: filter,
+                placeholder: "Name\u{2026}"
+            )
             if entities.isEmpty {
                 AdminEmptyState(
-                    message: "No entities yet. ",
+                    message: filter.isEmpty
+                        ? "No entities yet. "
+                        : "No entities matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/entities/new",
-                    ctaLabel: "Add the first one."
+                    ctaLabel: "Add one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Name")
-                                AdminTableHeader("Type")
+                                AdminSortableTH(
+                                    "Name",
+                                    key: "name",
+                                    sort: sort,
+                                    basePath: "/admin/entities",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Type",
+                                    key: "type",
+                                    sort: sort,
+                                    basePath: "/admin/entities",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("", alignment: .right)
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {
                             for entity in entities {
-                                tr(.custom(name: "data-entity-id", value: entity.id?.uuidString ?? "")) {
+                                tr(
+                                    .custom(
+                                        name: "data-entity-id",
+                                        value: entity.id?.uuidString ?? ""
+                                    )
+                                ) {
                                     td(.class("px-4 py-3 text-sm")) {
                                         a(
                                             .href("/admin/entities/\(entity.id?.uuidString ?? "")"),
@@ -50,7 +106,9 @@ struct EntitiesIndexPage: HTML {
                                     }
                                     td(.class("px-4 py-3 text-sm text-right")) {
                                         a(
-                                            .href("/admin/entities/\(entity.id?.uuidString ?? "")/edit"),
+                                            .href(
+                                                "/admin/entities/\(entity.id?.uuidString ?? "")/edit"
+                                            ),
                                             .class("text-gray-600 hover:text-gray-900")
                                         ) { "Edit" }
                                     }

@@ -17,10 +17,28 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
 
     // Index
     group.get { req -> HTMLResponse in
-        let projects = try await loadProjects(req: req)
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: ProjectsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? ProjectsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
+        let all = try await loadProjects(req: req)
+        let filtered = ProjectsIndexPage.filtered(all, by: filter)
+        let sorted = ProjectsIndexPage.sorted(filtered, by: activeSpec)
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            ProjectsIndexPage(brand: brand, projects: projects, flash: flash)
+            ProjectsIndexPage(
+                brand: brand,
+                projects: sorted,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

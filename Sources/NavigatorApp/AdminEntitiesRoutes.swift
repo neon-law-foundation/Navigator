@@ -9,15 +9,34 @@ func registerAdminEntitiesRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "entities")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: EntitiesIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? EntitiesIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
         let entities = try await Entity.query(on: db)
             .with(\.$legalEntityType)
-            .sort(\.$name)
             .all()
+        let sorted = EntitiesIndexPage.sorted(
+            EntitiesIndexPage.filtered(entities, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            EntitiesIndexPage(brand: brand, entities: entities, flash: flash)
+            EntitiesIndexPage(
+                brand: brand,
+                entities: sorted,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

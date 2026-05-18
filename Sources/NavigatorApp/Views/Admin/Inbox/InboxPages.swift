@@ -9,6 +9,11 @@ struct InboxIndexPage: HTML {
     let brand: any Brand
     let messages: [EmailMessage]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["receivedAt", "from", "subject"]
+    static let defaultSort: SortSpec = .single("receivedAt", .descending)
 
     static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -17,6 +22,39 @@ struct InboxIndexPage: HTML {
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
+
+    static func sorted(_ messages: [EmailMessage], by spec: SortSpec) -> [EmailMessage] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return messages.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "receivedAt":
+                return a.receivedAt < b.receivedAt
+            case "from":
+                let aFrom = (a.fromName ?? a.fromAddress).lowercased()
+                let bFrom = (b.fromName ?? b.fromAddress).lowercased()
+                return aFrom < bFrom
+            case "subject":
+                return a.subject.localizedCaseInsensitiveCompare(b.subject) == .orderedAscending
+            default:
+                return false
+            }
+        }
+    }
+
+    static func filtered(_ messages: [EmailMessage], by query: String) -> [EmailMessage] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return messages }
+        return messages.filter {
+            $0.subject.lowercased().contains(trimmed)
+                || $0.fromAddress.lowercased().contains(trimmed)
+                || ($0.fromName?.lowercased().contains(trimmed) ?? false)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -34,22 +72,49 @@ struct InboxIndexPage: HTML {
                 }
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/inbox",
+                value: filter,
+                placeholder: "Subject or sender\u{2026}"
+            )
             if messages.isEmpty {
                 div(
                     .class(
                         "rounded-lg border border-dashed border-gray-300 p-12 text-center bg-white"
                     )
                 ) {
-                    p(.class("text-gray-600")) { "No inbound mail yet." }
+                    p(.class("text-gray-600")) {
+                        filter.isEmpty
+                            ? "No inbound mail yet."
+                            : "No messages matched \u{201C}\(filter)\u{201D}."
+                    }
                 }
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Received")
-                                AdminTableHeader("From")
-                                AdminTableHeader("Subject")
+                                AdminSortableTH(
+                                    "Received",
+                                    key: "receivedAt",
+                                    sort: sort,
+                                    basePath: "/admin/inbox",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "From",
+                                    key: "from",
+                                    sort: sort,
+                                    basePath: "/admin/inbox",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Subject",
+                                    key: "subject",
+                                    sort: sort,
+                                    basePath: "/admin/inbox",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("Ack")
                             }
                         }

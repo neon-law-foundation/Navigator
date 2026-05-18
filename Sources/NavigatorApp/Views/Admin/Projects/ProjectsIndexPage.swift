@@ -2,11 +2,57 @@ import Elementary
 import NavigatorDAL
 import NavigatorWeb
 
-/// `/admin/projects` — list of every project, newest-updated first.
+/// `/admin/projects` — sortable, filterable list of every project.
 struct ProjectsIndexPage: HTML {
     let brand: any Brand
     let projects: [Project]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["codename", "title", "status", "projectType"]
+    static let defaultSort: SortSpec = .single("codename", .ascending)
+
+    /// Sorts `projects` by the spec's primary field. The list of allowed
+    /// keys mirrors the sortable columns the page renders so the route
+    /// handler's validation and the view stay in lockstep.
+    static func sorted(_ projects: [Project], by spec: SortSpec) -> [Project] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return projects.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "codename":
+                return a.codename.localizedCaseInsensitiveCompare(b.codename) == .orderedAscending
+            case "title":
+                return (a.title ?? "").localizedCaseInsensitiveCompare(b.title ?? "")
+                    == .orderedAscending
+            case "status":
+                return (a.status?.rawValue ?? "").localizedCaseInsensitiveCompare(
+                    b.status?.rawValue ?? ""
+                ) == .orderedAscending
+            case "projectType":
+                return (a.projectType?.rawValue ?? "").localizedCaseInsensitiveCompare(
+                    b.projectType?.rawValue ?? ""
+                ) == .orderedAscending
+            default:
+                return false
+            }
+        }
+    }
+
+    /// Case-insensitive substring match on codename and title.
+    static func filtered(_ projects: [Project], by query: String) -> [Project] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return projects }
+        return projects.filter {
+            $0.codename.lowercased().contains(trimmed)
+                || ($0.title?.lowercased().contains(trimmed) ?? false)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -20,56 +66,64 @@ struct ProjectsIndexPage: HTML {
                 }
                 LinkButton("New project", href: "/admin/projects/new", variant: .primary)
             }
-            if let flash {
-                div(
-                    .class("mb-4 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-800"),
-                    .custom(name: "role", value: "status")
-                ) { flash }
-            }
+            AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/projects",
+                value: filter,
+                placeholder: "Codename or title\u{2026}"
+            )
             if projects.isEmpty {
-                div(.class("rounded-lg border border-dashed border-gray-300 p-12 text-center bg-white")) {
-                    p(.class("text-gray-600")) {
-                        "No projects yet. "
-                    }
-                    a(.href("/admin/projects/new"), .class("text-indigo-600 hover:underline")) {
-                        "Create the first one."
-                    }
-                }
+                AdminEmptyState(
+                    message: filter.isEmpty
+                        ? "No projects yet. "
+                        : "No projects matched \u{201C}\(filter)\u{201D}. ",
+                    ctaHref: "/admin/projects/new",
+                    ctaLabel: "Create one."
+                )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                th(
-                                    .class(
-                                        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
-                                    )
-                                ) { "Codename" }
-                                th(
-                                    .class(
-                                        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
-                                    )
-                                ) { "Title" }
-                                th(
-                                    .class(
-                                        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
-                                    )
-                                ) { "Status" }
-                                th(
-                                    .class(
-                                        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
-                                    )
-                                ) { "Type" }
-                                th(
-                                    .class(
-                                        "px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-600"
-                                    )
-                                ) { "" }
+                                AdminSortableTH(
+                                    "Codename",
+                                    key: "codename",
+                                    sort: sort,
+                                    basePath: "/admin/projects",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Title",
+                                    key: "title",
+                                    sort: sort,
+                                    basePath: "/admin/projects",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Status",
+                                    key: "status",
+                                    sort: sort,
+                                    basePath: "/admin/projects",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Type",
+                                    key: "projectType",
+                                    sort: sort,
+                                    basePath: "/admin/projects",
+                                    queryItems: queryItems
+                                )
+                                AdminTableHeader("", alignment: .right)
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {
                             for project in projects {
-                                tr(.custom(name: "data-project-id", value: project.id?.uuidString ?? "")) {
+                                tr(
+                                    .custom(
+                                        name: "data-project-id",
+                                        value: project.id?.uuidString ?? ""
+                                    )
+                                ) {
                                     td(.class("px-4 py-3 text-sm")) {
                                         a(
                                             .href("/admin/projects/\(project.id?.uuidString ?? "")"),
@@ -87,7 +141,9 @@ struct ProjectsIndexPage: HTML {
                                     }
                                     td(.class("px-4 py-3 text-sm text-right")) {
                                         a(
-                                            .href("/admin/projects/\(project.id?.uuidString ?? "")/edit"),
+                                            .href(
+                                                "/admin/projects/\(project.id?.uuidString ?? "")/edit"
+                                            ),
                                             .class("text-gray-600 hover:text-gray-900")
                                         ) { "Edit" }
                                     }
