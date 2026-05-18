@@ -107,15 +107,22 @@ struct InboxShowPage: HTML {
                 a(.href("/admin/inbox"), .class("text-sm text-gray-600 hover:underline")) {
                     "\u{2190} Back to inbox"
                 }
-                if message.acknowledgedAt == nil {
-                    FormLayout(
-                        action: "/admin/inbox/\(messageID)/acknowledge",
-                        method: .post
-                    ) {
-                        SubmitButton("Mark as read", variant: .primary)
+                div(.class("flex items-center gap-2")) {
+                    LinkButton(
+                        "Reply",
+                        href: "/admin/messages/new?reply_to=\(messageID)",
+                        variant: .primary
+                    )
+                    if message.acknowledgedAt == nil {
+                        FormLayout(
+                            action: "/admin/inbox/\(messageID)/acknowledge",
+                            method: .post
+                        ) {
+                            SubmitButton("Mark as read")
+                        }
+                    } else {
+                        span(.class("text-sm text-gray-500")) { "Acknowledged" }
                     }
-                } else {
-                    span(.class("text-sm text-gray-500")) { "Acknowledged" }
                 }
             }
             section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {

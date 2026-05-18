@@ -32,9 +32,60 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         }
     }
 
-    group.get("new") { _ -> HTMLResponse in
-        HTMLResponse {
-            MessageComposePage(brand: brand, form: MessageFormValues(), errors: .none)
+    group.get("new") { req -> HTMLResponse in
+        // Pre-fill from either `?reply_to=<inbound-message-id>` (Reply
+        // button on inbox show) or `?project_id=<project-id>` (Send
+        // message button on a project show). `reply_to` wins if both are
+        // present.
+        let replyToParam = try? req.query.get(String.self, at: "reply_to")
+        let projectIdParam = try? req.query.get(String.self, at: "project_id")
+        var form = MessageFormValues()
+        var replyContext: MessageReplyContext? = nil
+        let db = try await requireDatabaseService(req).db
+
+        if let replyToParam, let replyToID = UUID(uuidString: replyToParam) {
+            if let parent = try await EmailMessage.find(replyToID, on: db) {
+                let replySubject =
+                    parent.subject.lowercased().hasPrefix("re:")
+                    ? parent.subject : "Re: \(parent.subject)"
+                form = MessageFormValues(
+                    to: parent.fromAddress,
+                    subject: replySubject,
+                    body: ""
+                )
+                replyContext = MessageReplyContext(
+                    inReplyTo: parent.messageId,
+                    parentThreadId: parent.threadId,
+                    originalSubject: parent.subject
+                )
+            }
+        } else if let projectIdParam, let projectID = UUID(uuidString: projectIdParam) {
+            // Pre-fill the `to` field with the project's unique client
+            // when there is exactly one; otherwise leave it blank so the
+            // operator types the recipient explicitly. The codename is
+            // dropped into the subject so the message lands with project
+            // context already on it.
+            if let project = try await Project.find(projectID, on: db) {
+                let clients = try await PersonProjectRole.query(on: db)
+                    .filter(\.$project.$id == projectID)
+                    .filter(\.$role == .client)
+                    .with(\.$person)
+                    .all()
+                let primaryEmail = clients.count == 1 ? clients[0].person.email : ""
+                form = MessageFormValues(
+                    to: primaryEmail,
+                    subject: "[\(project.codename)] ",
+                    body: ""
+                )
+            }
+        }
+        return HTMLResponse {
+            MessageComposePage(
+                brand: brand,
+                form: form,
+                errors: .none,
+                replyContext: replyContext
+            )
         }
     }
 
@@ -43,8 +94,14 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         let values = payload.values
         let errors = validateMessage(values: values)
         if !errors.summary.isEmpty {
+            let replyContext = payload.replyContext
             let html = HTMLResponse {
-                MessageComposePage(brand: brand, form: values, errors: errors)
+                MessageComposePage(
+                    brand: brand,
+                    form: values,
+                    errors: errors,
+                    replyContext: replyContext
+                )
             }
             return try await html.encodeResponse(status: .unprocessableEntity, for: req)
         }
@@ -54,7 +111,10 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             to: values.to.trimmingCharacters(in: .whitespacesAndNewlines),
             from: fromAddress,
             subject: values.subject.trimmingCharacters(in: .whitespacesAndNewlines),
-            textBody: values.body
+            textBody: values.body,
+            inReplyTo: payload.inReplyTo?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty,
+            parentThreadId: payload.parentThreadId?.trimmingCharacters(in: .whitespacesAndNewlines)
+                .nonEmpty
         )
         let outbound = OutboundEmail(
             to: saved.toAddress,
@@ -104,12 +164,37 @@ private struct MessagePayload: Content {
     var to: String?
     var subject: String?
     var body: String?
+    var inReplyTo: String?
+    var parentThreadId: String?
 
-    static let empty = MessagePayload(to: nil, subject: nil, body: nil)
+    static let empty = MessagePayload(
+        to: nil,
+        subject: nil,
+        body: nil,
+        inReplyTo: nil,
+        parentThreadId: nil
+    )
 
     var values: MessageFormValues {
         MessageFormValues(to: to ?? "", subject: subject ?? "", body: body ?? "")
     }
+
+    /// Echoed back into the form on a validation failure so the hidden
+    /// reply fields survive the round-trip.
+    var replyContext: MessageReplyContext? {
+        guard let inReplyTo = inReplyTo?.nonEmpty,
+            let parentThreadId = parentThreadId?.nonEmpty
+        else { return nil }
+        return MessageReplyContext(
+            inReplyTo: inReplyTo,
+            parentThreadId: parentThreadId,
+            originalSubject: ""
+        )
+    }
+}
+
+extension String {
+    fileprivate var nonEmpty: String? { isEmpty ? nil : self }
 }
 
 private func validateMessage(values: MessageFormValues) -> MessageFormErrors {

@@ -148,12 +148,21 @@ public struct EmailMessageRepository: Sendable {
     ///   - from: The verified SES sender address (`From:` header).
     ///   - subject: The subject line.
     ///   - textBody: The plain-text message body.
+    ///   - inReplyTo: When the outbound row is a reply, the inbound
+    ///     parent's `messageId`. Populates the `In-Reply-To` header and
+    ///     inherits the parent's `threadId` so the conversation stays
+    ///     stitched together. `nil` for new threads.
+    ///   - parentThreadId: Thread identifier inherited from the inbound
+    ///     row when replying. Only honored when `inReplyTo` is also set;
+    ///     a new thread starts at the outbound row's own message id.
     /// - Returns: The saved ``EmailMessage`` row.
     public func createOutbound(
         to: String,
         from: String,
         subject: String,
-        textBody: String
+        textBody: String,
+        inReplyTo: String? = nil,
+        parentThreadId: String? = nil
     ) async throws -> EmailMessage {
         try await database.transaction { tx in
             let messageID = UUID()
@@ -168,7 +177,16 @@ public struct EmailMessageRepository: Sendable {
             let message = EmailMessage()
             message.id = messageID
             message.messageId = messageIdHeader
-            message.threadId = messageIdHeader
+            // Inherit the inbound thread when replying so a reply lands in
+            // the same conversation; otherwise start a new thread at the
+            // outbound message-id.
+            if let inReplyTo, let parentThreadId {
+                message.inReplyTo = inReplyTo
+                message.threadId = parentThreadId
+                message.references = JSONStored([inReplyTo])
+            } else {
+                message.threadId = messageIdHeader
+            }
             message.fromAddress = from
             message.toAddress = to
             message.subject = subject
