@@ -58,6 +58,12 @@ public func configure(
         databaseService: databaseService,
         serverURL: URL(string: "/api")!
     )
+
+    // Wraps the application responder so admin POSTs carrying a
+    // `_method=PATCH|PUT|DELETE` form field route as the named verb.
+    // Vapor's `app.middleware` chain runs after route resolution, so
+    // method override has to intercept at the responder layer instead.
+    app.useMethodOverride()
 }
 
 /// Storage key for the parsed list of blog posts.
