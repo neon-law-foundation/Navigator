@@ -109,6 +109,9 @@ public func routes(_ app: Application) throws {
     try registerAdminRoutes(app, brand: brand)
     registerAdminProjectsRoutes(app, brand: brand)
     registerAdminPeopleRoutes(app, brand: brand)
+    registerAdminJurisdictionsRoutes(app, brand: brand)
+    registerAdminEntityTypesRoutes(app, brand: brand)
+    registerAdminEntitiesRoutes(app, brand: brand)
 
     app.get("admin", "mailroom") { req -> HTMLResponse in
         try await renderMailroom(req: req, brand: brand, portalLabel: "Admin", basePath: "/admin/mailroom")
