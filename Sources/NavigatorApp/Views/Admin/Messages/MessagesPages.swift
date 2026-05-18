@@ -65,20 +65,47 @@ struct MessagesIndexPage: HTML {
 }
 
 /// `/admin/messages/new` — compose form.
+///
+/// `replyContext` is non-nil when the operator arrived here via the
+/// Reply button on an inbound message — its `inReplyTo` and
+/// `parentThreadId` are emitted as hidden inputs so the POST handler can
+/// thread the outbound row back into the inbound conversation.
 struct MessageComposePage: HTML {
     let brand: any Brand
     let form: MessageFormValues
     let errors: MessageFormErrors
+    let replyContext: MessageReplyContext?
+
+    init(
+        brand: any Brand,
+        form: MessageFormValues,
+        errors: MessageFormErrors,
+        replyContext: MessageReplyContext? = nil
+    ) {
+        self.brand = brand
+        self.form = form
+        self.errors = errors
+        self.replyContext = replyContext
+    }
 
     var body: some HTML {
         AdminPageLayout(
-            pageTitle: "New message",
+            pageTitle: replyContext == nil ? "New message" : "Reply",
             activeSection: .messages,
             brand: brand
         ) {
             div(.class("max-w-2xl bg-white p-6 rounded-lg border border-gray-200")) {
                 FormErrors(errors.summary)
+                if let replyContext {
+                    p(.class("text-xs text-gray-500 mb-4")) {
+                        "Replying to \u{201C}\(replyContext.originalSubject)\u{201D}"
+                    }
+                }
                 FormLayout(action: "/admin/messages", method: .post) {
+                    if let replyContext {
+                        HiddenField(name: "inReplyTo", value: replyContext.inReplyTo)
+                        HiddenField(name: "parentThreadId", value: replyContext.parentThreadId)
+                    }
                     EmailField(
                         name: "to",
                         label: "To",
@@ -110,6 +137,13 @@ struct MessageComposePage: HTML {
             }
         }
     }
+}
+
+/// Hidden-input payload threaded through a reply form.
+struct MessageReplyContext: Sendable {
+    let inReplyTo: String
+    let parentThreadId: String
+    let originalSubject: String
 }
 
 /// `/admin/messages/:id` — single sent message.

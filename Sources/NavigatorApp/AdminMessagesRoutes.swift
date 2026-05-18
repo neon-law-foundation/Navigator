@@ -32,9 +32,38 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         }
     }
 
-    group.get("new") { _ -> HTMLResponse in
-        HTMLResponse {
-            MessageComposePage(brand: brand, form: MessageFormValues(), errors: .none)
+    group.get("new") { req -> HTMLResponse in
+        // Pre-fill from `?reply_to=<inbound-message-id>` so the Reply
+        // button on the inbox detail page lands the operator on a form
+        // that is already threaded back into the parent conversation.
+        let replyToParam = try? req.query.get(String.self, at: "reply_to")
+        var form = MessageFormValues()
+        var replyContext: MessageReplyContext? = nil
+        if let replyToParam, let replyToID = UUID(uuidString: replyToParam) {
+            let db = try await requireDatabaseService(req).db
+            if let parent = try await EmailMessage.find(replyToID, on: db) {
+                let replySubject =
+                    parent.subject.lowercased().hasPrefix("re:")
+                    ? parent.subject : "Re: \(parent.subject)"
+                form = MessageFormValues(
+                    to: parent.fromAddress,
+                    subject: replySubject,
+                    body: ""
+                )
+                replyContext = MessageReplyContext(
+                    inReplyTo: parent.messageId,
+                    parentThreadId: parent.threadId,
+                    originalSubject: parent.subject
+                )
+            }
+        }
+        return HTMLResponse {
+            MessageComposePage(
+                brand: brand,
+                form: form,
+                errors: .none,
+                replyContext: replyContext
+            )
         }
     }
 
@@ -43,8 +72,14 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         let values = payload.values
         let errors = validateMessage(values: values)
         if !errors.summary.isEmpty {
+            let replyContext = payload.replyContext
             let html = HTMLResponse {
-                MessageComposePage(brand: brand, form: values, errors: errors)
+                MessageComposePage(
+                    brand: brand,
+                    form: values,
+                    errors: errors,
+                    replyContext: replyContext
+                )
             }
             return try await html.encodeResponse(status: .unprocessableEntity, for: req)
         }
@@ -54,7 +89,10 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             to: values.to.trimmingCharacters(in: .whitespacesAndNewlines),
             from: fromAddress,
             subject: values.subject.trimmingCharacters(in: .whitespacesAndNewlines),
-            textBody: values.body
+            textBody: values.body,
+            inReplyTo: payload.inReplyTo?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty,
+            parentThreadId: payload.parentThreadId?.trimmingCharacters(in: .whitespacesAndNewlines)
+                .nonEmpty
         )
         let outbound = OutboundEmail(
             to: saved.toAddress,
@@ -104,12 +142,37 @@ private struct MessagePayload: Content {
     var to: String?
     var subject: String?
     var body: String?
+    var inReplyTo: String?
+    var parentThreadId: String?
 
-    static let empty = MessagePayload(to: nil, subject: nil, body: nil)
+    static let empty = MessagePayload(
+        to: nil,
+        subject: nil,
+        body: nil,
+        inReplyTo: nil,
+        parentThreadId: nil
+    )
 
     var values: MessageFormValues {
         MessageFormValues(to: to ?? "", subject: subject ?? "", body: body ?? "")
     }
+
+    /// Echoed back into the form on a validation failure so the hidden
+    /// reply fields survive the round-trip.
+    var replyContext: MessageReplyContext? {
+        guard let inReplyTo = inReplyTo?.nonEmpty,
+            let parentThreadId = parentThreadId?.nonEmpty
+        else { return nil }
+        return MessageReplyContext(
+            inReplyTo: inReplyTo,
+            parentThreadId: parentThreadId,
+            originalSubject: ""
+        )
+    }
+}
+
+extension String {
+    fileprivate var nonEmpty: String? { isEmpty ? nil : self }
 }
 
 private func validateMessage(values: MessageFormValues) -> MessageFormErrors {
