@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navigator.neonlaw.org/schemas/workflow.schema.json",
+  "title": "Workflow",
+  "description": "A template's workflow state machine. Same wire shape as the Questionnaire schema. The state name's kind prefix (the substring before the first '__') dispatches at access time to a typed WorkflowStep — BEGIN/END → system, staff_review → staff, notarization → respondent, mailroom_send → staff, mailroom_receive → staff.",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/$defs/TransitionMap"
+  },
+  "$defs": {
+    "StateName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A workflow state name. The kind prefix (everything before the first '__') must map to a registered WorkflowStep type: 'BEGIN'/'END' (system), 'staff_review' (staff), 'notarization' (respondent), 'mailroom_send' (staff), 'mailroom_receive' (staff)."
+    },
+    "Condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "TransitionMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/StateName"
+      },
+      "minProperties": 0
+    }
+  },
+  "examples": [
+    {
+      "BEGIN": { "_": "staff_review" },
+      "staff_review": { "_": "notarization__for_trustee" },
+      "notarization__for_trustee": { "yes": "END", "_": "staff_review" }
+    }
+  ]
+}

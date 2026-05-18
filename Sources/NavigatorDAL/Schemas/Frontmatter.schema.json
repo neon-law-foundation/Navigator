@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navigator.neonlaw.org/schemas/frontmatter.schema.json",
+  "title": "Frontmatter",
+  "description": "Structured metadata parsed from a template's YAML frontmatter block. Persisted as a JSONB document on the templates table; the top-level title/code/respondent_type/description columns are denormalised from the same value.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "respondent_type", "code", "confidential"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Human-readable display title for the template."
+    },
+    "respondent_type": {
+      "type": "string",
+      "enum": ["person", "entity", "person_and_entity"],
+      "description": "Who can be assigned a notation derived from this template."
+    },
+    "code": {
+      "type": "string",
+      "description": "Unique stable code identifying this template type within its repository."
+    },
+    "confidential": {
+      "type": "boolean",
+      "description": "Whether the template's content is confidential and should be access-controlled."
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Brief human-readable description of the template's purpose."
+    }
+  },
+  "examples": [
+    {
+      "title": "Nevada Trust",
+      "respondent_type": "entity",
+      "code": "trusts__nevada",
+      "confidential": false,
+      "description": "A basic Nevada trust."
+    }
+  ]
+}
