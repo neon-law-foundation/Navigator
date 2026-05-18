@@ -110,6 +110,15 @@ struct MailroomPage: HTML {
                         "Every piece of physical mail logged across every managed mailroom. "
                             + "Click a column header to sort."
                     }
+                    if portalLabel == "Admin" {
+                        div(.class("mt-4")) {
+                            LinkButton(
+                                "New letter",
+                                href: "/admin/mailroom/letters/new",
+                                variant: .primary
+                            )
+                        }
+                    }
                 }
                 DataTable(
                     columns: Self.columns,
