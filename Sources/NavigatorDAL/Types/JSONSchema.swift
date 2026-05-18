@@ -18,6 +18,7 @@ public enum JSONSchema {
         case questionnaire = "Questionnaire"
         case workflow = "Workflow"
         case notationEvent = "NotationEvent"
+        case questionChoices = "QuestionChoices"
 
         fileprivate var resourceName: String { rawValue }
     }

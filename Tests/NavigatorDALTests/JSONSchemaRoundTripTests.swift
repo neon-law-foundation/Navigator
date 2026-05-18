@@ -122,6 +122,29 @@ struct JSONSchemaRoundTripTests {
         try assertRequired(.notationEvent, encoded: fixture)
     }
 
+    // MARK: - QuestionChoices
+
+    @Test("QuestionChoices schema examples decode as [String: String]")
+    func questionChoicesExamplesDecode() throws {
+        let examples = try allExamples(of: .questionChoices)
+        #expect(examples.count >= 1)
+        for example in examples {
+            let choices = try decoder.decode([String: String].self, from: example)
+            #expect(!choices.isEmpty)
+        }
+    }
+
+    @Test("QuestionChoices Swift fixture round-trips through JSON")
+    func questionChoicesRoundTrip() throws {
+        let fixture: [String: String] = [
+            "approved": "Approved",
+            "needs_revision": "Needs Revision",
+        ]
+        let data = try encoder.encode(fixture)
+        let again = try decoder.decode([String: String].self, from: data)
+        #expect(again == fixture)
+    }
+
     // MARK: - Helpers
 
     private func firstExample(of name: JSONSchema.Name) throws -> Data {

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navigator.neonlaw.org/schemas/question-choices.schema.json",
+  "title": "QuestionChoices",
+  "description": "The choice map for a `Question` whose `question_type` is `radio`, `select`, or `multi_select`. Keys are the stored value (what an answer records); values are the display label shown to a respondent. Persisted as a JSONB column on the questions table. Schema is referenced by the OpenAPI spec's Question/UpdateQuestionRequest types.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "string",
+    "description": "Display label for the keyed choice value."
+  },
+  "examples": [
+    {
+      "original": "Original Application",
+      "amended": "Amendment to Previous Application"
+    },
+    {
+      "approved": "Approved - Ready to File",
+      "needs_revision": "Needs Revision",
+      "pending_client": "Pending Client Response"
+    }
+  ]
+}
