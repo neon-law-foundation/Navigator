@@ -8,6 +8,7 @@ import Foundation
 /// text.
 enum AdminSection: String, CaseIterable, Sendable {
     case dashboard
+    case search
     case projects
     case people
     case entities
@@ -34,6 +35,7 @@ enum AdminSection: String, CaseIterable, Sendable {
     var label: String {
         switch self {
         case .dashboard: "Dashboard"
+        case .search: "Search"
         case .projects: "Projects"
         case .people: "People"
         case .entities: "Entities"
@@ -62,6 +64,7 @@ enum AdminSection: String, CaseIterable, Sendable {
     var href: String {
         switch self {
         case .dashboard: "/admin"
+        case .search: "/admin/search"
         case .projects: "/admin/projects"
         case .people: "/admin/people"
         case .entities: "/admin/entities"
@@ -91,7 +94,7 @@ enum AdminSection: String, CaseIterable, Sendable {
     /// Keeps the 23 sections from collapsing into one wall of links.
     var group: AdminSidebarGroup {
         switch self {
-        case .dashboard:
+        case .dashboard, .search:
             .overview
         case .projects, .people, .entities, .entityTypes, .contacts:
             .directory
