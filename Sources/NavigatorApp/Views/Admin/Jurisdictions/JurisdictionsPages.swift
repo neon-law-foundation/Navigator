@@ -7,6 +7,42 @@ struct JurisdictionsIndexPage: HTML {
     let brand: any Brand
     let jurisdictions: [Jurisdiction]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["name", "code", "type"]
+    static let defaultSort: SortSpec = .single("name", .ascending)
+
+    static func sorted(_ rows: [Jurisdiction], by spec: SortSpec) -> [Jurisdiction] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "name":
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            case "code":
+                return a.code.localizedCaseInsensitiveCompare(b.code) == .orderedAscending
+            case "type":
+                return a.jurisdictionType.rawValue.localizedCaseInsensitiveCompare(
+                    b.jurisdictionType.rawValue
+                ) == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Jurisdiction], by query: String) -> [Jurisdiction] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter {
+            $0.name.lowercased().contains(trimmed)
+                || $0.code.lowercased().contains(trimmed)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -25,20 +61,45 @@ struct JurisdictionsIndexPage: HTML {
                 )
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/jurisdictions",
+                value: filter,
+                placeholder: "Name or code\u{2026}"
+            )
             if jurisdictions.isEmpty {
                 AdminEmptyState(
-                    message: "No jurisdictions yet. ",
+                    message: filter.isEmpty
+                        ? "No jurisdictions yet. "
+                        : "No jurisdictions matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/jurisdictions/new",
-                    ctaLabel: "Add the first one."
+                    ctaLabel: "Add one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Name")
-                                AdminTableHeader("Code")
-                                AdminTableHeader("Type")
+                                AdminSortableTH(
+                                    "Name",
+                                    key: "name",
+                                    sort: sort,
+                                    basePath: "/admin/jurisdictions",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Code",
+                                    key: "code",
+                                    sort: sort,
+                                    basePath: "/admin/jurisdictions",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Type",
+                                    key: "type",
+                                    sort: sort,
+                                    basePath: "/admin/jurisdictions",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("", alignment: .right)
                             }
                         }

@@ -23,11 +23,30 @@ private func registerTemplatesReadRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "templates")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: TemplatesIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? TemplatesIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
-        let rows = try await Template.query(on: db).sort(\.$title).all()
+        let rows = try await Template.query(on: db).all()
+        let processed = TemplatesIndexPage.sorted(
+            TemplatesIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
         return HTMLResponse {
-            TemplatesIndexPage(brand: brand, templates: rows)
+            TemplatesIndexPage(
+                brand: brand,
+                templates: processed,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 
@@ -50,12 +69,32 @@ private func registerQuestionsCRUDRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "questions")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: QuestionsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? QuestionsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
-        let rows = try await Question.query(on: db).sort(\.$code).all()
+        let rows = try await Question.query(on: db).all()
+        let processed = QuestionsIndexPage.sorted(
+            QuestionsIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            QuestionsIndexPage(brand: brand, questions: rows, flash: flash)
+            QuestionsIndexPage(
+                brand: brand,
+                questions: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 
@@ -223,6 +262,16 @@ private func registerNotationsReadRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "notations")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: NotationsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? NotationsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
         let rows = try await Notation.query(on: db)
@@ -230,7 +279,18 @@ private func registerNotationsReadRoutes(_ app: Application, brand: any Brand) {
             .with(\.$person)
             .with(\.$entity)
             .all()
-        return HTMLResponse { NotationsIndexPage(brand: brand, notations: rows) }
+        let processed = NotationsIndexPage.sorted(
+            NotationsIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
+        return HTMLResponse {
+            NotationsIndexPage(
+                brand: brand,
+                notations: processed,
+                sort: activeSpec,
+                filter: filter
+            )
+        }
     }
 
     group.get(":id") { req -> HTMLResponse in

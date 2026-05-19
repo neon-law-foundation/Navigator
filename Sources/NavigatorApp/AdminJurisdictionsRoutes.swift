@@ -9,12 +9,32 @@ func registerAdminJurisdictionsRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "jurisdictions")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: JurisdictionsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? JurisdictionsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
-        let rows = try await Jurisdiction.query(on: db).sort(\.$name).all()
+        let rows = try await Jurisdiction.query(on: db).all()
+        let processed = JurisdictionsIndexPage.sorted(
+            JurisdictionsIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            JurisdictionsIndexPage(brand: brand, jurisdictions: rows, flash: flash)
+            JurisdictionsIndexPage(
+                brand: brand,
+                jurisdictions: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

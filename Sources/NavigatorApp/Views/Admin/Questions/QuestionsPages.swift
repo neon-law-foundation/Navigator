@@ -6,6 +6,42 @@ struct QuestionsIndexPage: HTML {
     let brand: any Brand
     let questions: [Question]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["code", "prompt", "questionType"]
+    static let defaultSort: SortSpec = .single("code", .ascending)
+
+    static func sorted(_ rows: [Question], by spec: SortSpec) -> [Question] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "code":
+                return a.code.localizedCaseInsensitiveCompare(b.code) == .orderedAscending
+            case "prompt":
+                return a.prompt.localizedCaseInsensitiveCompare(b.prompt) == .orderedAscending
+            case "questionType":
+                return a.questionType.rawValue.localizedCaseInsensitiveCompare(
+                    b.questionType.rawValue
+                ) == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Question], by query: String) -> [Question] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter {
+            $0.code.lowercased().contains(trimmed)
+                || $0.prompt.lowercased().contains(trimmed)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -20,20 +56,45 @@ struct QuestionsIndexPage: HTML {
                 LinkButton("New question", href: "/admin/questions/new", variant: .primary)
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/questions",
+                value: filter,
+                placeholder: "Code or prompt\u{2026}"
+            )
             if questions.isEmpty {
                 AdminEmptyState(
-                    message: "No questions yet. ",
+                    message: filter.isEmpty
+                        ? "No questions yet. "
+                        : "No questions matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/questions/new",
-                    ctaLabel: "Create the first one."
+                    ctaLabel: "Create one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Code")
-                                AdminTableHeader("Prompt")
-                                AdminTableHeader("Type")
+                                AdminSortableTH(
+                                    "Code",
+                                    key: "code",
+                                    sort: sort,
+                                    basePath: "/admin/questions",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Prompt",
+                                    key: "prompt",
+                                    sort: sort,
+                                    basePath: "/admin/questions",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Type",
+                                    key: "questionType",
+                                    sort: sort,
+                                    basePath: "/admin/questions",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("", alignment: .right)
                             }
                         }
