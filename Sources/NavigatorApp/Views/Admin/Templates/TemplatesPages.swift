@@ -138,6 +138,7 @@ struct TemplatesIndexPage: HTML {
 struct TemplateShowPage: HTML {
     let brand: any Brand
     let template: Template
+    let activity: [AdminActivityEvent]
 
     var body: some HTML {
         AdminPageLayout(
@@ -165,12 +166,16 @@ struct TemplateShowPage: HTML {
                     dd(.class("font-mono text-gray-900 break-all")) { template.version }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Markdown content" }
                 pre(
                     .class("text-xs bg-gray-50 p-4 rounded overflow-x-auto text-gray-800")
                 ) { template.markdownContent }
             }
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this template version."
+            )
         }
     }
 }
