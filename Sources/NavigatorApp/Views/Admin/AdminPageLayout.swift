@@ -24,6 +24,11 @@ struct AdminPageLayout<Content: HTML>: HTMLDocument {
         meta(.name("robots"), .content("noindex, nofollow"))
         link(.rel(.icon), .href("/favicon.svg"))
         script(.src("https://cdn.tailwindcss.com")) {}
+        // HTMX powers progressive enhancements like the live search
+        // results swap. Routes detect `HX-Request: true` and respond
+        // with a fragment when the browser is asking for one — the same
+        // URL still server-renders a full page on a normal navigation.
+        script(.src("https://unpkg.com/htmx.org@2.0.4")) {}
     }
 
     var body: some HTML {
