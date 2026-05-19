@@ -14,7 +14,42 @@ import VaporElementary
 public func registerAdminRoutes(_ app: Application, brand: any Brand) throws {
     app.get("admin") { req -> HTMLResponse in
         let tiles = try await dashboardTiles(req: req)
-        return HTMLResponse { AdminDashboard(brand: brand, tiles: tiles) }
+        let sinceRaw = (try? req.query.get(String.self, at: "since")) ?? ""
+        let sinceDate = sinceRaw.isEmpty ? nil : DashboardSinceFormatter.parse(sinceRaw)
+        let activity = try await loadDashboardActivityIfAvailable(req: req, since: sinceDate)
+        return HTMLResponse {
+            AdminDashboard(brand: brand, tiles: tiles, activity: activity, since: sinceRaw)
+        }
+    }
+}
+
+/// Loads the cross-resource activity feed when the database is wired.
+/// Test boots without a database get an empty feed rather than a 500.
+private func loadDashboardActivityIfAvailable(
+    req: Request,
+    since: Date?
+) async throws -> [AdminActivityEvent] {
+    guard let databaseService = req.application.databaseService else {
+        return []
+    }
+    let db = try await databaseService.db
+    return try await loadDashboardActivity(db: db, since: since)
+}
+
+/// `yyyy-MM-dd` parser used by the dashboard's `?since=` cutoff. Kept
+/// separate so the format is interpreted in UTC, matching the
+/// `Date`-typed `<input type="date">` value semantics.
+enum DashboardSinceFormatter {
+    static let formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    static func parse(_ raw: String) -> Date? {
+        formatter.date(from: raw)
     }
 }
 
