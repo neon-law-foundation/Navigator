@@ -179,8 +179,24 @@ struct InboxShowPage: HTML {
     let brand: any Brand
     let message: EmailMessage
     let thread: [EmailMessage]
+    let attachments: [EmailAttachment]
 
     private var messageID: String { message.id?.uuidString ?? "" }
+
+    /// Formats a file size in the most human-readable unit. Goes
+    /// through KB / MB / GB until the number is single- or low-double
+    /// digits.
+    static func humanSize(_ bytes: Int64) -> String {
+        let units = ["B", "KB", "MB", "GB", "TB"]
+        var size = Double(bytes)
+        var unit = 0
+        while size >= 1024 && unit < units.count - 1 {
+            size /= 1024
+            unit += 1
+        }
+        if unit == 0 { return "\(bytes) B" }
+        return String(format: "%.1f %@", size, units[unit])
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -246,6 +262,37 @@ struct InboxShowPage: HTML {
                     pre(.class("text-xs text-gray-700 whitespace-pre-wrap break-all")) { html }
                 } else {
                     p(.class("text-sm text-gray-500")) { "(no body)" }
+                }
+            }
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
+                h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Attachments" }
+                if attachments.isEmpty {
+                    p(.class("text-sm text-gray-500")) { "No attachments on this message." }
+                } else {
+                    ul(.class("space-y-2 text-sm")) {
+                        for attachment in attachments {
+                            li(
+                                .class("flex items-center justify-between"),
+                                .custom(
+                                    name: "data-attachment-id",
+                                    value: attachment.id?.uuidString ?? ""
+                                )
+                            ) {
+                                div {
+                                    a(
+                                        .href(attachment.blob.objectStorageUrl),
+                                        .class("text-indigo-700 hover:underline font-medium")
+                                    ) { attachment.filename }
+                                    span(.class("text-xs text-gray-500 ml-2")) {
+                                        attachment.contentType
+                                    }
+                                }
+                                span(.class("text-xs font-mono text-gray-500")) {
+                                    Self.humanSize(attachment.sizeBytes)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             MessageThreadSection(thread: thread, currentMessageID: message.id)

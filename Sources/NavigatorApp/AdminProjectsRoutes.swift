@@ -16,7 +16,7 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "projects")
 
     // Index
-    group.get { req -> HTMLResponse in
+    group.get { req -> Response in
         let raw = try? req.query.get(String.self, at: "sort")
         let parsed = SortSpec.parse(raw)
         let spec: SortSpec
@@ -31,6 +31,25 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
         let all = try await loadProjects(req: req)
         let filtered = ProjectsIndexPage.filtered(all, by: filter)
         let sorted = ProjectsIndexPage.sorted(filtered, by: activeSpec)
+        // CSV export skips pagination and emits the full filtered+sorted
+        // set — operators routinely export to analyze offline.
+        if (try? req.query.get(String.self, at: "format")) == "csv" {
+            let body = AdminCSVExport.render(
+                header: ["Codename", "Title", "Status", "Type"],
+                rows: sorted.map { project in
+                    [
+                        project.codename,
+                        project.title ?? "",
+                        project.status?.rawValue ?? "",
+                        project.projectType?.rawValue ?? "",
+                    ]
+                }
+            )
+            return AdminCSVExport.response(
+                body: body,
+                filename: "projects-\(AdminCSVExport.filenameStamp()).csv"
+            )
+        }
         let total = sorted.count
         let pageRows = AdminPagination.slice(sorted, page: page)
         var queryItems: [(String, String)] = []
@@ -44,7 +63,7 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
             queryItems: queryItems
         )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
-        return HTMLResponse {
+        let html = HTMLResponse {
             ProjectsIndexPage(
                 brand: brand,
                 projects: pageRows,
@@ -54,6 +73,7 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
                 pagination: pagination
             )
         }
+        return try await html.encodeResponse(for: req)
     }
 
     // New
