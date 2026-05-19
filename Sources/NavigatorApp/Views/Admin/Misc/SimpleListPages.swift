@@ -936,14 +936,21 @@ struct ShareClassesIndexPage: HTML {
 
     var body: some HTML {
         AdminPageLayout(pageTitle: "Share classes", activeSection: .shareClasses, brand: brand) {
-            p(.class("text-sm text-gray-600 mb-6")) {
-                "\(classes.count) share class\(classes.count == 1 ? "" : "es")"
+            div(.class("flex items-center justify-between mb-6")) {
+                p(.class("text-sm text-gray-600")) {
+                    "\(classes.count) share class\(classes.count == 1 ? "" : "es")"
+                }
+                LinkButton(
+                    "New share class",
+                    href: "/admin/share-classes/new",
+                    variant: .primary
+                )
             }
             if classes.isEmpty {
                 AdminEmptyState(
-                    message: "No share classes yet.",
-                    ctaHref: "/admin",
-                    ctaLabel: "Back to dashboard"
+                    message: "No share classes yet. ",
+                    ctaHref: "/admin/share-classes/new",
+                    ctaLabel: "Create one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
@@ -953,6 +960,7 @@ struct ShareClassesIndexPage: HTML {
                                 AdminTableHeader("Entity")
                                 AdminTableHeader("Name")
                                 AdminTableHeader("Priority", alignment: .right)
+                                AdminTableHeader("", alignment: .right)
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {
@@ -962,6 +970,12 @@ struct ShareClassesIndexPage: HTML {
                                     td(.class("px-4 py-3 text-sm")) { c.name }
                                     td(.class("px-4 py-3 text-sm text-right font-mono")) {
                                         String(c.priority)
+                                    }
+                                    td(.class("px-4 py-3 text-sm text-right")) {
+                                        a(
+                                            .href("/admin/share-classes/\(c.id?.uuidString ?? "")/edit"),
+                                            .class("text-gray-600 hover:text-gray-900")
+                                        ) { "Edit" }
                                     }
                                 }
                             }
@@ -983,14 +997,21 @@ struct ShareIssuancesIndexPage: HTML {
             activeSection: .shareIssuances,
             brand: brand
         ) {
-            p(.class("text-sm text-gray-600 mb-6")) {
-                "\(issuances.count) issuance\(issuances.count == 1 ? "" : "s")"
+            div(.class("flex items-center justify-between mb-6")) {
+                p(.class("text-sm text-gray-600")) {
+                    "\(issuances.count) issuance\(issuances.count == 1 ? "" : "s")"
+                }
+                LinkButton(
+                    "New issuance",
+                    href: "/admin/share-issuances/new",
+                    variant: .primary
+                )
             }
             if issuances.isEmpty {
                 AdminEmptyState(
-                    message: "No issuances yet.",
-                    ctaHref: "/admin",
-                    ctaLabel: "Back to dashboard"
+                    message: "No issuances yet. ",
+                    ctaHref: "/admin/share-issuances/new",
+                    ctaLabel: "Record one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
@@ -1000,6 +1021,7 @@ struct ShareIssuancesIndexPage: HTML {
                                 AdminTableHeader("Entity")
                                 AdminTableHeader("Shareholder type")
                                 AdminTableHeader("Shareholder ID")
+                                AdminTableHeader("", alignment: .right)
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {
@@ -1011,6 +1033,12 @@ struct ShareIssuancesIndexPage: HTML {
                                     }
                                     td(.class("px-4 py-3 text-xs font-mono text-gray-500")) {
                                         i.shareholderId.uuidString
+                                    }
+                                    td(.class("px-4 py-3 text-sm text-right")) {
+                                        a(
+                                            .href("/admin/share-issuances/\(i.id?.uuidString ?? "")/edit"),
+                                            .class("text-gray-600 hover:text-gray-900")
+                                        ) { "Edit" }
                                     }
                                 }
                             }
