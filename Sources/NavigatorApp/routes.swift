@@ -117,6 +117,7 @@ public func routes(_ app: Application) throws {
     registerAdminContactsRoutes(app, brand: brand)
     registerAdminWorkflowRoutes(app, brand: brand)
     registerAdminInboxRoutes(app, brand: brand)
+    registerAdminInboxAtomRoutes(app)
     registerAdminMessagesRoutes(app, brand: brand)
     registerAdminRemainingRoutes(app, brand: brand)
     registerAdminLetterRoutes(app, brand: brand)
