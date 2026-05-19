@@ -51,7 +51,12 @@ struct PeopleIndexPage: HTML {
                 p(.class("text-sm text-gray-600")) {
                     "\(people.count) \(people.count == 1 ? "person" : "people")"
                 }
-                LinkButton("New person", href: "/admin/people/new", variant: .primary)
+                LinkButton(
+                    "New person",
+                    href: "/admin/people/new",
+                    variant: .primary,
+                    dataShortcut: "new"
+                )
             }
             AdminFlashBanner(message: flash)
             AdminFilterBar(
@@ -95,6 +100,10 @@ struct PeopleIndexPage: HTML {
                                     .custom(
                                         name: "data-person-id",
                                         value: person.id?.uuidString ?? ""
+                                    ),
+                                    .custom(
+                                        name: "data-row-href",
+                                        value: "/admin/people/\(person.id?.uuidString ?? "")"
                                     )
                                 ) {
                                     td(.class("px-4 py-3 text-sm")) {

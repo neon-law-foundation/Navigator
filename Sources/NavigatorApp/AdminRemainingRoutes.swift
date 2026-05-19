@@ -41,7 +41,10 @@ private func registerRetainerRoutes(_ app: Application, brand: any Brand) {
         guard let r = try await Retainer.find(id, on: db) else {
             throw Abort(.notFound)
         }
-        return HTMLResponse { RetainerShowPage(brand: brand, retainer: r) }
+        let activity = try await loadRetainerActivity(retainer: r, db: db)
+        return HTMLResponse {
+            RetainerShowPage(brand: brand, retainer: r, activity: activity)
+        }
     }
 }
 

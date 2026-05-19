@@ -132,6 +132,7 @@ struct NotationsIndexPage: HTML {
 struct NotationShowPage: HTML {
     let brand: any Brand
     let notation: Notation
+    let activity: [AdminActivityEvent]
 
     var body: some HTML {
         AdminPageLayout(
@@ -167,7 +168,7 @@ struct NotationShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "State history" }
                 if notation.stateHistory.value.isEmpty {
                     p(.class("text-sm text-gray-500")) { "No transitions recorded yet." }
@@ -181,6 +182,10 @@ struct NotationShowPage: HTML {
                     }
                 }
             }
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this notation yet."
+            )
         }
     }
 }

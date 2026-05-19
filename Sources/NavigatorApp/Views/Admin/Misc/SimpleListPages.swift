@@ -66,6 +66,7 @@ struct RetainersIndexPage: HTML {
 struct RetainerShowPage: HTML {
     let brand: any Brand
     let retainer: Retainer
+    let activity: [AdminActivityEvent]
 
     var body: some HTML {
         AdminPageLayout(
@@ -92,7 +93,7 @@ struct RetainerShowPage: HTML {
                     }
                 }
             }
-            section(.class("bg-white rounded-lg border border-gray-200 p-6")) {
+            section(.class("bg-white rounded-lg border border-gray-200 p-6 mb-6")) {
                 h2(.class("text-lg font-semibold text-gray-900 mb-4")) { "Clients" }
                 if retainer.clients.value.isEmpty {
                     p(.class("text-sm text-gray-500")) { "No clients on this retainer." }
@@ -104,6 +105,10 @@ struct RetainerShowPage: HTML {
                     }
                 }
             }
+            AdminActivitySection(
+                events: activity,
+                emptyMessage: "No activity recorded for this retainer yet."
+            )
         }
     }
 }
