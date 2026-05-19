@@ -27,17 +27,31 @@ func registerAdminProjectsRoutes(_ app: Application, brand: any Brand) {
         }
         let activeSpec = spec.fields.isEmpty ? ProjectsIndexPage.defaultSort : spec
         let filter = (try? req.query.get(String.self, at: "q")) ?? ""
+        let page = AdminPagination.parsePage(try? req.query.get(String.self, at: "page"))
         let all = try await loadProjects(req: req)
         let filtered = ProjectsIndexPage.filtered(all, by: filter)
         let sorted = ProjectsIndexPage.sorted(filtered, by: activeSpec)
+        let total = sorted.count
+        let pageRows = AdminPagination.slice(sorted, page: page)
+        var queryItems: [(String, String)] = []
+        if !filter.isEmpty { queryItems.append(("q", filter)) }
+        if !activeSpec.encoded.isEmpty { queryItems.append(("sort", activeSpec.encoded)) }
+        let pagination = AdminPagination(
+            page: page,
+            pageSize: AdminPagination.defaultPageSize,
+            total: total,
+            basePath: "/admin/projects",
+            queryItems: queryItems
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
             ProjectsIndexPage(
                 brand: brand,
-                projects: sorted,
+                projects: pageRows,
                 flash: flash,
                 sort: activeSpec,
-                filter: filter
+                filter: filter,
+                pagination: pagination
             )
         }
     }
