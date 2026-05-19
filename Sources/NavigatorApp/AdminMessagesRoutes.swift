@@ -20,7 +20,7 @@ import VaporElementary
 func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "messages")
 
-    group.get { req -> HTMLResponse in
+    group.get { req -> Response in
         let raw = try? req.query.get(String.self, at: "sort")
         let parsed = SortSpec.parse(raw)
         let spec: SortSpec
@@ -39,6 +39,22 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             MessagesIndexPage.filtered(outbound, by: filter),
             by: activeSpec
         )
+        if (try? req.query.get(String.self, at: "format")) == "csv" {
+            let body = AdminCSVExport.render(
+                header: ["Sent", "To", "Subject"],
+                rows: processed.map { m in
+                    [
+                        MessageFormat.shortDateTime(m.receivedAt),
+                        m.toAddress,
+                        m.subject,
+                    ]
+                }
+            )
+            return AdminCSVExport.response(
+                body: body,
+                filename: "messages-\(AdminCSVExport.filenameStamp()).csv"
+            )
+        }
         let total = processed.count
         let pageRows = AdminPagination.slice(processed, page: page)
         var queryItems: [(String, String)] = []
@@ -52,7 +68,7 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             queryItems: queryItems
         )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
-        return HTMLResponse {
+        let html = HTMLResponse {
             MessagesIndexPage(
                 brand: brand,
                 messages: pageRows,
@@ -62,6 +78,7 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
                 pagination: pagination
             )
         }
+        return try await html.encodeResponse(for: req)
     }
 
     group.get("new") { req -> HTMLResponse in

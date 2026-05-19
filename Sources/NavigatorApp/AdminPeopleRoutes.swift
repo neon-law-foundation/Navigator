@@ -11,7 +11,7 @@ import VaporElementary
 func registerAdminPeopleRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "people")
 
-    group.get { req -> HTMLResponse in
+    group.get { req -> Response in
         let raw = try? req.query.get(String.self, at: "sort")
         let parsed = SortSpec.parse(raw)
         let spec: SortSpec
@@ -27,8 +27,18 @@ func registerAdminPeopleRoutes(_ app: Application, brand: any Brand) {
             PeopleIndexPage.filtered(all, by: filter),
             by: activeSpec
         )
+        if (try? req.query.get(String.self, at: "format")) == "csv" {
+            let body = AdminCSVExport.render(
+                header: ["Name", "Email"],
+                rows: sorted.map { [$0.name, $0.email] }
+            )
+            return AdminCSVExport.response(
+                body: body,
+                filename: "people-\(AdminCSVExport.filenameStamp()).csv"
+            )
+        }
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
-        return HTMLResponse {
+        let html = HTMLResponse {
             PeopleIndexPage(
                 brand: brand,
                 people: sorted,
@@ -37,6 +47,7 @@ func registerAdminPeopleRoutes(_ app: Application, brand: any Brand) {
                 filter: filter
             )
         }
+        return try await html.encodeResponse(for: req)
     }
 
     group.get("new") { _ -> HTMLResponse in
