@@ -81,75 +81,93 @@ struct ProjectsIndexPage: HTML {
                     ctaLabel: "Create one."
                 )
             } else {
-                div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
-                    table(.class("min-w-full divide-y divide-gray-200")) {
-                        thead(.class("bg-gray-50")) {
-                            tr {
-                                AdminSortableTH(
-                                    "Codename",
-                                    key: "codename",
-                                    sort: sort,
-                                    basePath: "/admin/projects",
-                                    queryItems: queryItems
-                                )
-                                AdminSortableTH(
-                                    "Title",
-                                    key: "title",
-                                    sort: sort,
-                                    basePath: "/admin/projects",
-                                    queryItems: queryItems
-                                )
-                                AdminSortableTH(
-                                    "Status",
-                                    key: "status",
-                                    sort: sort,
-                                    basePath: "/admin/projects",
-                                    queryItems: queryItems
-                                )
-                                AdminSortableTH(
-                                    "Type",
-                                    key: "projectType",
-                                    sort: sort,
-                                    basePath: "/admin/projects",
-                                    queryItems: queryItems
-                                )
-                                AdminTableHeader("", alignment: .right)
-                            }
-                        }
-                        tbody(.class("divide-y divide-gray-100")) {
-                            for project in projects {
-                                tr(
-                                    .custom(
-                                        name: "data-project-id",
-                                        value: project.id?.uuidString ?? ""
+                form(
+                    .action("/admin/projects/archive-bulk"),
+                    .method(.post)
+                ) {
+                    div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
+                        table(.class("min-w-full divide-y divide-gray-200")) {
+                            thead(.class("bg-gray-50")) {
+                                tr {
+                                    AdminTableHeader("")
+                                    AdminSortableTH(
+                                        "Codename",
+                                        key: "codename",
+                                        sort: sort,
+                                        basePath: "/admin/projects",
+                                        queryItems: queryItems
                                     )
-                                ) {
-                                    td(.class("px-4 py-3 text-sm")) {
-                                        a(
-                                            .href("/admin/projects/\(project.id?.uuidString ?? "")"),
-                                            .class("text-indigo-700 hover:underline font-mono")
-                                        ) { project.codename }
-                                    }
-                                    td(.class("px-4 py-3 text-sm text-gray-700")) {
-                                        project.title ?? "\u{2014}"
-                                    }
-                                    td(.class("px-4 py-3 text-sm text-gray-700")) {
-                                        project.status?.rawValue ?? "\u{2014}"
-                                    }
-                                    td(.class("px-4 py-3 text-sm text-gray-700")) {
-                                        project.projectType?.rawValue ?? "\u{2014}"
-                                    }
-                                    td(.class("px-4 py-3 text-sm text-right")) {
-                                        a(
-                                            .href(
-                                                "/admin/projects/\(project.id?.uuidString ?? "")/edit"
-                                            ),
-                                            .class("text-gray-600 hover:text-gray-900")
-                                        ) { "Edit" }
+                                    AdminSortableTH(
+                                        "Title",
+                                        key: "title",
+                                        sort: sort,
+                                        basePath: "/admin/projects",
+                                        queryItems: queryItems
+                                    )
+                                    AdminSortableTH(
+                                        "Status",
+                                        key: "status",
+                                        sort: sort,
+                                        basePath: "/admin/projects",
+                                        queryItems: queryItems
+                                    )
+                                    AdminSortableTH(
+                                        "Type",
+                                        key: "projectType",
+                                        sort: sort,
+                                        basePath: "/admin/projects",
+                                        queryItems: queryItems
+                                    )
+                                    AdminTableHeader("", alignment: .right)
+                                }
+                            }
+                            tbody(.class("divide-y divide-gray-100")) {
+                                for project in projects {
+                                    tr(
+                                        .custom(
+                                            name: "data-project-id",
+                                            value: project.id?.uuidString ?? ""
+                                        )
+                                    ) {
+                                        td(.class("px-4 py-3 text-sm w-8")) {
+                                            input(
+                                                .type(.checkbox),
+                                                .name("ids[]"),
+                                                .value(project.id?.uuidString ?? "")
+                                            )
+                                        }
+                                        td(.class("px-4 py-3 text-sm")) {
+                                            a(
+                                                .href(
+                                                    "/admin/projects/\(project.id?.uuidString ?? "")"
+                                                ),
+                                                .class("text-indigo-700 hover:underline font-mono")
+                                            ) { project.codename }
+                                        }
+                                        td(.class("px-4 py-3 text-sm text-gray-700")) {
+                                            project.title ?? "\u{2014}"
+                                        }
+                                        td(.class("px-4 py-3 text-sm text-gray-700")) {
+                                            project.status?.rawValue ?? "\u{2014}"
+                                        }
+                                        td(.class("px-4 py-3 text-sm text-gray-700")) {
+                                            project.projectType?.rawValue ?? "\u{2014}"
+                                        }
+                                        td(.class("px-4 py-3 text-sm text-right")) {
+                                            a(
+                                                .href(
+                                                    "/admin/projects/\(project.id?.uuidString ?? "")/edit"
+                                                ),
+                                                .class("text-gray-600 hover:text-gray-900")
+                                            ) { "Edit" }
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+                    div(.class("flex justify-end mt-4")) {
+                        SubmitButton("Archive selected", variant: .danger)
                     }
                 }
             }
