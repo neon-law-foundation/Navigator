@@ -9,6 +9,7 @@ struct ProjectsIndexPage: HTML {
     let flash: String?
     let sort: SortSpec
     let filter: String
+    let pagination: AdminPagination
 
     static let sortableKeys: Set<String> = ["codename", "title", "status", "projectType"]
     static let defaultSort: SortSpec = .single("codename", .ascending)
@@ -170,6 +171,7 @@ struct ProjectsIndexPage: HTML {
                         SubmitButton("Archive selected", variant: .danger)
                     }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }

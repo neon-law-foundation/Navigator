@@ -11,6 +11,7 @@ struct InboxIndexPage: HTML {
     let flash: String?
     let sort: SortSpec
     let filter: String
+    let pagination: AdminPagination
 
     static let sortableKeys: Set<String> = ["receivedAt", "from", "subject"]
     static let defaultSort: SortSpec = .single("receivedAt", .descending)
@@ -166,6 +167,7 @@ struct InboxIndexPage: HTML {
                         SubmitButton("Acknowledge selected", variant: .primary)
                     }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }

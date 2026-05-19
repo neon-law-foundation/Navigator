@@ -24,6 +24,7 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
         }
         let activeSpec = spec.fields.isEmpty ? InboxIndexPage.defaultSort : spec
         let filter = (try? req.query.get(String.self, at: "q")) ?? ""
+        let page = AdminPagination.parsePage(try? req.query.get(String.self, at: "page"))
         let databaseService = try requireDatabaseService(req)
         let db = try await databaseService.db
         let all = try await EmailMessage.query(on: db).all()
@@ -32,14 +33,27 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
             InboxIndexPage.filtered(inbound, by: filter),
             by: activeSpec
         )
+        let total = processed.count
+        let pageRows = AdminPagination.slice(processed, page: page)
+        var queryItems: [(String, String)] = []
+        if !filter.isEmpty { queryItems.append(("q", filter)) }
+        if !activeSpec.encoded.isEmpty { queryItems.append(("sort", activeSpec.encoded)) }
+        let pagination = AdminPagination(
+            page: page,
+            pageSize: AdminPagination.defaultPageSize,
+            total: total,
+            basePath: "/admin/inbox",
+            queryItems: queryItems
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
             InboxIndexPage(
                 brand: brand,
-                messages: processed,
+                messages: pageRows,
                 flash: flash,
                 sort: activeSpec,
-                filter: filter
+                filter: filter,
+                pagination: pagination
             )
         }
     }

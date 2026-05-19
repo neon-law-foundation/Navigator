@@ -31,6 +31,7 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
         }
         let activeSpec = spec.fields.isEmpty ? MessagesIndexPage.defaultSort : spec
         let filter = (try? req.query.get(String.self, at: "q")) ?? ""
+        let page = AdminPagination.parsePage(try? req.query.get(String.self, at: "page"))
         let db = try await requireDatabaseService(req).db
         let all = try await EmailMessage.query(on: db).all()
         let outbound = all.filter { $0.direction == .outbound }
@@ -38,14 +39,27 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
             MessagesIndexPage.filtered(outbound, by: filter),
             by: activeSpec
         )
+        let total = processed.count
+        let pageRows = AdminPagination.slice(processed, page: page)
+        var queryItems: [(String, String)] = []
+        if !filter.isEmpty { queryItems.append(("q", filter)) }
+        if !activeSpec.encoded.isEmpty { queryItems.append(("sort", activeSpec.encoded)) }
+        let pagination = AdminPagination(
+            page: page,
+            pageSize: AdminPagination.defaultPageSize,
+            total: total,
+            basePath: "/admin/messages",
+            queryItems: queryItems
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
             MessagesIndexPage(
                 brand: brand,
-                messages: processed,
+                messages: pageRows,
                 flash: flash,
                 sort: activeSpec,
-                filter: filter
+                filter: filter,
+                pagination: pagination
             )
         }
     }
