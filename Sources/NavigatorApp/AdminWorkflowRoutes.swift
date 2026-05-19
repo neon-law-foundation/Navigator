@@ -59,7 +59,10 @@ private func registerTemplatesReadRoutes(_ app: Application, brand: any Brand) {
         guard let t = try await Template.find(id, on: db) else {
             throw Abort(.notFound)
         }
-        return HTMLResponse { TemplateShowPage(brand: brand, template: t) }
+        let activity = loadTemplateActivity(template: t)
+        return HTMLResponse {
+            TemplateShowPage(brand: brand, template: t, activity: activity)
+        }
     }
 }
 
@@ -307,6 +310,9 @@ private func registerNotationsReadRoutes(_ app: Application, brand: any Brand) {
                 .filter(\.$id == id)
                 .first()
         else { throw Abort(.notFound) }
-        return HTMLResponse { NotationShowPage(brand: brand, notation: n) }
+        let activity = loadNotationActivity(notation: n)
+        return HTMLResponse {
+            NotationShowPage(brand: brand, notation: n, activity: activity)
+        }
     }
 }
