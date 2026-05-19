@@ -13,7 +13,7 @@ import VaporElementary
 func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "inbox")
 
-    group.get { req -> HTMLResponse in
+    group.get { req -> Response in
         let raw = try? req.query.get(String.self, at: "sort")
         let parsed = SortSpec.parse(raw)
         let spec: SortSpec
@@ -33,6 +33,24 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
             InboxIndexPage.filtered(inbound, by: filter),
             by: activeSpec
         )
+        if (try? req.query.get(String.self, at: "format")) == "csv" {
+            let body = AdminCSVExport.render(
+                header: ["Received", "From", "To", "Subject", "Acknowledged"],
+                rows: processed.map { m in
+                    [
+                        InboxIndexPage.dateFormatter.string(from: m.receivedAt),
+                        m.fromName ?? m.fromAddress,
+                        m.toAddress,
+                        m.subject,
+                        m.acknowledgedAt == nil ? "" : "yes",
+                    ]
+                }
+            )
+            return AdminCSVExport.response(
+                body: body,
+                filename: "inbox-\(AdminCSVExport.filenameStamp()).csv"
+            )
+        }
         let total = processed.count
         let pageRows = AdminPagination.slice(processed, page: page)
         var queryItems: [(String, String)] = []
@@ -46,7 +64,7 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
             queryItems: queryItems
         )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
-        return HTMLResponse {
+        let html = HTMLResponse {
             InboxIndexPage(
                 brand: brand,
                 messages: pageRows,
@@ -56,6 +74,7 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
                 pagination: pagination
             )
         }
+        return try await html.encodeResponse(for: req)
     }
 
     group.get(":id") { req -> HTMLResponse in
