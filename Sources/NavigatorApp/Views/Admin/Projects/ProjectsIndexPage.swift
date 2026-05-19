@@ -65,7 +65,12 @@ struct ProjectsIndexPage: HTML {
                 p(.class("text-sm text-gray-600")) {
                     "\(projects.count) project\(projects.count == 1 ? "" : "s")"
                 }
-                LinkButton("New project", href: "/admin/projects/new", variant: .primary)
+                LinkButton(
+                    "New project",
+                    href: "/admin/projects/new",
+                    variant: .primary,
+                    dataShortcut: "new"
+                )
             }
             AdminFlashBanner(message: flash)
             AdminFilterBar(
@@ -128,6 +133,10 @@ struct ProjectsIndexPage: HTML {
                                         .custom(
                                             name: "data-project-id",
                                             value: project.id?.uuidString ?? ""
+                                        ),
+                                        .custom(
+                                            name: "data-row-href",
+                                            value: "/admin/projects/\(project.id?.uuidString ?? "")"
                                         )
                                     ) {
                                         td(.class("px-4 py-3 text-sm w-8")) {

@@ -130,6 +130,10 @@ struct InboxIndexPage: HTML {
                                         .custom(
                                             name: "data-acknowledged",
                                             value: m.acknowledgedAt == nil ? "false" : "true"
+                                        ),
+                                        .custom(
+                                            name: "data-row-href",
+                                            value: "/admin/inbox/\(m.id?.uuidString ?? "")"
                                         )
                                     ) {
                                         td(.class("px-4 py-3 text-sm w-8")) {

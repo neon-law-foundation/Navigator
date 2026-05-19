@@ -42,6 +42,12 @@ public func configure(
     // serving, routing) only ever sees requests on a canonical host.
     app.middleware.use(CanonicalHostMiddleware())
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    // AdminErrorMiddleware sits inside the default ErrorMiddleware so
+    // it can catch `AbortError`s before they become plain-text 4xx/5xx
+    // and re-render them with the admin chrome (sidebar + dashboard
+    // link). Only `/admin/*` paths are intercepted; everything else
+    // falls through to the default rendering.
+    app.middleware.use(AdminErrorMiddleware(brand: NLFBrand()))
 
     let posts = try BlogLoader.loadAll()
     app.storage[BlogStorageKey.self] = posts
