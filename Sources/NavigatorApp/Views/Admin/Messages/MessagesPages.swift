@@ -11,6 +11,41 @@ struct MessagesIndexPage: HTML {
     let brand: any Brand
     let messages: [EmailMessage]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["sent", "to", "subject"]
+    static let defaultSort: SortSpec = .single("sent", .descending)
+
+    static func sorted(_ rows: [EmailMessage], by spec: SortSpec) -> [EmailMessage] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "sent":
+                return a.receivedAt < b.receivedAt
+            case "to":
+                return a.toAddress.localizedCaseInsensitiveCompare(b.toAddress)
+                    == .orderedAscending
+            case "subject":
+                return a.subject.localizedCaseInsensitiveCompare(b.subject) == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [EmailMessage], by query: String) -> [EmailMessage] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter {
+            $0.subject.lowercased().contains(trimmed)
+                || $0.toAddress.lowercased().contains(trimmed)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -25,20 +60,45 @@ struct MessagesIndexPage: HTML {
                 LinkButton("New message", href: "/admin/messages/new", variant: .primary)
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/messages",
+                value: filter,
+                placeholder: "Subject or recipient\u{2026}"
+            )
             if messages.isEmpty {
                 AdminEmptyState(
-                    message: "No outbound messages yet. ",
+                    message: filter.isEmpty
+                        ? "No outbound messages yet. "
+                        : "No messages matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/messages/new",
-                    ctaLabel: "Compose the first one."
+                    ctaLabel: "Compose one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Sent")
-                                AdminTableHeader("To")
-                                AdminTableHeader("Subject")
+                                AdminSortableTH(
+                                    "Sent",
+                                    key: "sent",
+                                    sort: sort,
+                                    basePath: "/admin/messages",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "To",
+                                    key: "to",
+                                    sort: sort,
+                                    basePath: "/admin/messages",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Subject",
+                                    key: "subject",
+                                    sort: sort,
+                                    basePath: "/admin/messages",
+                                    queryItems: queryItems
+                                )
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {

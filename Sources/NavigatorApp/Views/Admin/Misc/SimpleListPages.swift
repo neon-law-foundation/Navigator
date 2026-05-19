@@ -163,6 +163,43 @@ struct CredentialsIndexPage: HTML {
     let brand: any Brand
     let credentials: [Credential]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["person", "jurisdiction", "licenseNumber"]
+    static let defaultSort: SortSpec = .single("licenseNumber", .ascending)
+
+    static func sorted(_ rows: [Credential], by spec: SortSpec) -> [Credential] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "person":
+                return a.person.name.localizedCaseInsensitiveCompare(b.person.name)
+                    == .orderedAscending
+            case "jurisdiction":
+                return a.jurisdiction.name.localizedCaseInsensitiveCompare(b.jurisdiction.name)
+                    == .orderedAscending
+            case "licenseNumber":
+                return a.licenseNumber.localizedCaseInsensitiveCompare(b.licenseNumber)
+                    == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Credential], by query: String) -> [Credential] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter {
+            $0.licenseNumber.lowercased().contains(trimmed)
+                || $0.person.name.lowercased().contains(trimmed)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(pageTitle: "Credentials", activeSection: .credentials, brand: brand) {
@@ -173,20 +210,45 @@ struct CredentialsIndexPage: HTML {
                 LinkButton("New credential", href: "/admin/credentials/new", variant: .primary)
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/credentials",
+                value: filter,
+                placeholder: "License # or person\u{2026}"
+            )
             if credentials.isEmpty {
                 AdminEmptyState(
-                    message: "No credentials yet. ",
+                    message: filter.isEmpty
+                        ? "No credentials yet. "
+                        : "No credentials matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/credentials/new",
-                    ctaLabel: "Add the first one."
+                    ctaLabel: "Add one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Person")
-                                AdminTableHeader("Jurisdiction")
-                                AdminTableHeader("License #")
+                                AdminSortableTH(
+                                    "Person",
+                                    key: "person",
+                                    sort: sort,
+                                    basePath: "/admin/credentials",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Jurisdiction",
+                                    key: "jurisdiction",
+                                    sort: sort,
+                                    basePath: "/admin/credentials",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "License #",
+                                    key: "licenseNumber",
+                                    sort: sort,
+                                    basePath: "/admin/credentials",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("", alignment: .right)
                             }
                         }
@@ -532,6 +594,35 @@ struct MailroomsIndexPage: HTML {
     let brand: any Brand
     let mailrooms: [Mailroom]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["name", "mailboxStart"]
+    static let defaultSort: SortSpec = .single("name", .ascending)
+
+    static func sorted(_ rows: [Mailroom], by spec: SortSpec) -> [Mailroom] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "name":
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            case "mailboxStart":
+                return a.mailboxStart < b.mailboxStart
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Mailroom], by query: String) -> [Mailroom] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter { $0.name.lowercased().contains(trimmed) }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(pageTitle: "Mailrooms", activeSection: .mailrooms, brand: brand) {
@@ -542,19 +633,38 @@ struct MailroomsIndexPage: HTML {
                 LinkButton("New mailroom", href: "/admin/mailrooms/new", variant: .primary)
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/mailrooms",
+                value: filter,
+                placeholder: "Name\u{2026}"
+            )
             if mailrooms.isEmpty {
                 AdminEmptyState(
-                    message: "No mailrooms yet. ",
+                    message: filter.isEmpty
+                        ? "No mailrooms yet. "
+                        : "No mailrooms matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/mailrooms/new",
-                    ctaLabel: "Add the first one."
+                    ctaLabel: "Add one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Name")
-                                AdminTableHeader("Mailbox range")
+                                AdminSortableTH(
+                                    "Name",
+                                    key: "name",
+                                    sort: sort,
+                                    basePath: "/admin/mailrooms",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Mailbox range",
+                                    key: "mailboxStart",
+                                    sort: sort,
+                                    basePath: "/admin/mailrooms",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("Capacity")
                                 AdminTableHeader("", alignment: .right)
                             }

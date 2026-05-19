@@ -65,15 +65,34 @@ private func registerCredentialRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "credentials")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: CredentialsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? CredentialsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let db = try await requireDatabaseService(req).db
         let rows = try await Credential.query(on: db)
             .with(\.$person)
             .with(\.$jurisdiction)
-            .sort(\.$licenseNumber)
             .all()
+        let processed = CredentialsIndexPage.sorted(
+            CredentialsIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            CredentialsIndexPage(brand: brand, credentials: rows, flash: flash)
+            CredentialsIndexPage(
+                brand: brand,
+                credentials: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 
@@ -301,11 +320,31 @@ private func registerMailroomRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "mailrooms")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: MailroomsIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? MailroomsIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let db = try await requireDatabaseService(req).db
-        let rows = try await Mailroom.query(on: db).sort(\.$name).all()
+        let rows = try await Mailroom.query(on: db).all()
+        let processed = MailroomsIndexPage.sorted(
+            MailroomsIndexPage.filtered(rows, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            MailroomsIndexPage(brand: brand, mailrooms: rows, flash: flash)
+            MailroomsIndexPage(
+                brand: brand,
+                mailrooms: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

@@ -7,6 +7,38 @@ import NavigatorWeb
 struct NotationsIndexPage: HTML {
     let brand: any Brand
     let notations: [Notation]
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["template", "state"]
+    static let defaultSort: SortSpec = .single("template", .ascending)
+
+    static func sorted(_ rows: [Notation], by spec: SortSpec) -> [Notation] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "template":
+                return a.template.title.localizedCaseInsensitiveCompare(b.template.title)
+                    == .orderedAscending
+            case "state":
+                let aState = a.stateHistory.value.last?.toState ?? ""
+                let bState = b.stateHistory.value.last?.toState ?? ""
+                return aState.localizedCaseInsensitiveCompare(bState) == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Notation], by query: String) -> [Notation] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter { $0.template.title.lowercased().contains(trimmed) }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -22,22 +54,43 @@ struct NotationsIndexPage: HTML {
                     "Notations are created by the API and the workflow engine; the admin view is read-only."
                 }
             }
+            AdminFilterBar(
+                action: "/admin/notations",
+                value: filter,
+                placeholder: "Template title\u{2026}"
+            )
             if notations.isEmpty {
                 div(
                     .class(
                         "rounded-lg border border-dashed border-gray-300 p-12 text-center bg-white"
                     )
                 ) {
-                    p(.class("text-gray-600")) { "No notations yet." }
+                    p(.class("text-gray-600")) {
+                        filter.isEmpty
+                            ? "No notations yet."
+                            : "No notations matched \u{201C}\(filter)\u{201D}."
+                    }
                 }
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Template")
+                                AdminSortableTH(
+                                    "Template",
+                                    key: "template",
+                                    sort: sort,
+                                    basePath: "/admin/notations",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("Respondent")
-                                AdminTableHeader("State")
+                                AdminSortableTH(
+                                    "State",
+                                    key: "state",
+                                    sort: sort,
+                                    basePath: "/admin/notations",
+                                    queryItems: queryItems
+                                )
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {

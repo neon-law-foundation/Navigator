@@ -21,14 +21,32 @@ func registerAdminMessagesRoutes(_ app: Application, brand: any Brand) {
     let group = app.grouped("admin", "messages")
 
     group.get { req -> HTMLResponse in
+        let raw = try? req.query.get(String.self, at: "sort")
+        let parsed = SortSpec.parse(raw)
+        let spec: SortSpec
+        do {
+            spec = try parsed.validated(against: MessagesIndexPage.sortableKeys)
+        } catch let SortError.unsupportedField(key) {
+            throw Abort(.badRequest, reason: "Unsupported sort field: \(key)")
+        }
+        let activeSpec = spec.fields.isEmpty ? MessagesIndexPage.defaultSort : spec
+        let filter = (try? req.query.get(String.self, at: "q")) ?? ""
         let db = try await requireDatabaseService(req).db
-        let all = try await EmailMessage.query(on: db)
-            .sort(\.$receivedAt, .descending)
-            .all()
+        let all = try await EmailMessage.query(on: db).all()
         let outbound = all.filter { $0.direction == .outbound }
+        let processed = MessagesIndexPage.sorted(
+            MessagesIndexPage.filtered(outbound, by: filter),
+            by: activeSpec
+        )
         let flash = (try? req.query.get(String.self, at: "flash")).map { decodeFlash($0) }
         return HTMLResponse {
-            MessagesIndexPage(brand: brand, messages: outbound, flash: flash)
+            MessagesIndexPage(
+                brand: brand,
+                messages: processed,
+                flash: flash,
+                sort: activeSpec,
+                filter: filter
+            )
         }
     }
 

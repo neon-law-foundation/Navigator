@@ -10,6 +10,41 @@ import NavigatorWeb
 struct TemplatesIndexPage: HTML {
     let brand: any Brand
     let templates: [Template]
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["title", "code", "version"]
+    static let defaultSort: SortSpec = .single("title", .ascending)
+
+    static func sorted(_ rows: [Template], by spec: SortSpec) -> [Template] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "title":
+                return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+            case "code":
+                return (a.code ?? "").localizedCaseInsensitiveCompare(b.code ?? "")
+                    == .orderedAscending
+            case "version":
+                return a.version.localizedCaseInsensitiveCompare(b.version) == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [Template], by query: String) -> [Template] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter {
+            $0.title.lowercased().contains(trimmed)
+                || ($0.code?.lowercased().contains(trimmed) ?? false)
+        }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -25,23 +60,50 @@ struct TemplatesIndexPage: HTML {
                     "Templates are sourced from git; create a new version by committing to the source repository."
                 }
             }
+            AdminFilterBar(
+                action: "/admin/templates",
+                value: filter,
+                placeholder: "Title or code\u{2026}"
+            )
             if templates.isEmpty {
                 div(
                     .class(
                         "rounded-lg border border-dashed border-gray-300 p-12 text-center bg-white"
                     )
                 ) {
-                    p(.class("text-gray-600")) { "No templates yet." }
+                    p(.class("text-gray-600")) {
+                        filter.isEmpty
+                            ? "No templates yet."
+                            : "No templates matched \u{201C}\(filter)\u{201D}."
+                    }
                 }
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Title")
-                                AdminTableHeader("Code")
+                                AdminSortableTH(
+                                    "Title",
+                                    key: "title",
+                                    sort: sort,
+                                    basePath: "/admin/templates",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Code",
+                                    key: "code",
+                                    sort: sort,
+                                    basePath: "/admin/templates",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("Respondent")
-                                AdminTableHeader("Version")
+                                AdminSortableTH(
+                                    "Version",
+                                    key: "version",
+                                    sort: sort,
+                                    basePath: "/admin/templates",
+                                    queryItems: queryItems
+                                )
                             }
                         }
                         tbody(.class("divide-y divide-gray-100")) {

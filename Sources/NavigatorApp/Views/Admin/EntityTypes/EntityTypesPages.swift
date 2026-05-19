@@ -6,6 +6,36 @@ struct EntityTypesIndexPage: HTML {
     let brand: any Brand
     let entityTypes: [EntityType]
     let flash: String?
+    let sort: SortSpec
+    let filter: String
+
+    static let sortableKeys: Set<String> = ["name", "jurisdiction"]
+    static let defaultSort: SortSpec = .single("name", .ascending)
+
+    static func sorted(_ rows: [EntityType], by spec: SortSpec) -> [EntityType] {
+        let primary = spec.fields.first ?? defaultSort.fields.first!
+        return rows.sorted { lhs, rhs in
+            let (a, b) = primary.direction == .ascending ? (lhs, rhs) : (rhs, lhs)
+            switch primary.key {
+            case "name":
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            case "jurisdiction":
+                return a.jurisdiction.name.localizedCaseInsensitiveCompare(b.jurisdiction.name)
+                    == .orderedAscending
+            default: return false
+            }
+        }
+    }
+
+    static func filtered(_ rows: [EntityType], by query: String) -> [EntityType] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return rows }
+        return rows.filter { $0.name.lowercased().contains(trimmed) }
+    }
+
+    private var queryItems: [(String, String)] {
+        filter.isEmpty ? [] : [("q", filter)]
+    }
 
     var body: some HTML {
         AdminPageLayout(
@@ -24,19 +54,38 @@ struct EntityTypesIndexPage: HTML {
                 )
             }
             AdminFlashBanner(message: flash)
+            AdminFilterBar(
+                action: "/admin/entity-types",
+                value: filter,
+                placeholder: "Name\u{2026}"
+            )
             if entityTypes.isEmpty {
                 AdminEmptyState(
-                    message: "No entity types yet. ",
+                    message: filter.isEmpty
+                        ? "No entity types yet. "
+                        : "No types matched \u{201C}\(filter)\u{201D}. ",
                     ctaHref: "/admin/entity-types/new",
-                    ctaLabel: "Add the first one."
+                    ctaLabel: "Add one."
                 )
             } else {
                 div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
                     table(.class("min-w-full divide-y divide-gray-200")) {
                         thead(.class("bg-gray-50")) {
                             tr {
-                                AdminTableHeader("Name")
-                                AdminTableHeader("Jurisdiction")
+                                AdminSortableTH(
+                                    "Name",
+                                    key: "name",
+                                    sort: sort,
+                                    basePath: "/admin/entity-types",
+                                    queryItems: queryItems
+                                )
+                                AdminSortableTH(
+                                    "Jurisdiction",
+                                    key: "jurisdiction",
+                                    sort: sort,
+                                    basePath: "/admin/entity-types",
+                                    queryItems: queryItems
+                                )
                                 AdminTableHeader("", alignment: .right)
                             }
                         }
