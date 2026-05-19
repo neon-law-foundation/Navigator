@@ -13,6 +13,7 @@ struct MessagesIndexPage: HTML {
     let flash: String?
     let sort: SortSpec
     let filter: String
+    let pagination: AdminPagination
 
     static let sortableKeys: Set<String> = ["sent", "to", "subject"]
     static let defaultSort: SortSpec = .single("sent", .descending)
@@ -119,6 +120,7 @@ struct MessagesIndexPage: HTML {
                         }
                     }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }

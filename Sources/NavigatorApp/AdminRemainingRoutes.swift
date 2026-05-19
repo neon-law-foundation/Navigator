@@ -279,7 +279,18 @@ private func registerInvoiceRoutes(_ app: Application, brand: any Brand) {
         let rows = try await Invoice.query(on: db)
             .sort(\.$invoiceDate, .descending)
             .all()
-        return HTMLResponse { InvoicesIndexPage(brand: brand, invoices: rows) }
+        let page = AdminPagination.parsePage(try? req.query.get(String.self, at: "page"))
+        let pageRows = AdminPagination.slice(rows, page: page)
+        let pagination = AdminPagination(
+            page: page,
+            pageSize: AdminPagination.defaultPageSize,
+            total: rows.count,
+            basePath: "/admin/invoices",
+            queryItems: []
+        )
+        return HTMLResponse {
+            InvoicesIndexPage(brand: brand, invoices: pageRows, pagination: pagination)
+        }
     }
 
     group.get(":id") { req -> HTMLResponse in
@@ -508,7 +519,18 @@ private func registerUserRoutes(_ app: Application, brand: any Brand) {
             .with(\.$changedByUser) { $0.with(\.$person) }
             .sort(\.$insertedAt, .descending)
             .all()
-        return HTMLResponse { UserRoleAuditIndexPage(brand: brand, audits: rows) }
+        let page = AdminPagination.parsePage(try? req.query.get(String.self, at: "page"))
+        let pageRows = AdminPagination.slice(rows, page: page)
+        let pagination = AdminPagination(
+            page: page,
+            pageSize: AdminPagination.defaultPageSize,
+            total: rows.count,
+            basePath: "/admin/user-role-audit",
+            queryItems: []
+        )
+        return HTMLResponse {
+            UserRoleAuditIndexPage(brand: brand, audits: pageRows, pagination: pagination)
+        }
     }
 }
 
