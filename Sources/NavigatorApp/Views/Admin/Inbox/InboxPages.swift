@@ -11,6 +11,7 @@ struct InboxIndexPage: HTML {
     let flash: String?
     let sort: SortSpec
     let filter: String
+    let pagination: AdminPagination
 
     static let sortableKeys: Set<String> = ["receivedAt", "from", "subject"]
     static let defaultSort: SortSpec = .single("receivedAt", .descending)
@@ -90,66 +91,83 @@ struct InboxIndexPage: HTML {
                     }
                 }
             } else {
-                div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
-                    table(.class("min-w-full divide-y divide-gray-200")) {
-                        thead(.class("bg-gray-50")) {
-                            tr {
-                                AdminSortableTH(
-                                    "Received",
-                                    key: "receivedAt",
-                                    sort: sort,
-                                    basePath: "/admin/inbox",
-                                    queryItems: queryItems
-                                )
-                                AdminSortableTH(
-                                    "From",
-                                    key: "from",
-                                    sort: sort,
-                                    basePath: "/admin/inbox",
-                                    queryItems: queryItems
-                                )
-                                AdminSortableTH(
-                                    "Subject",
-                                    key: "subject",
-                                    sort: sort,
-                                    basePath: "/admin/inbox",
-                                    queryItems: queryItems
-                                )
-                                AdminTableHeader("Ack")
-                            }
-                        }
-                        tbody(.class("divide-y divide-gray-100")) {
-                            for m in messages {
-                                tr(
-                                    .custom(
-                                        name: "data-acknowledged",
-                                        value: m.acknowledgedAt == nil ? "false" : "true"
+                form(
+                    .action("/admin/inbox/acknowledge-bulk"),
+                    .method(.post)
+                ) {
+                    div(.class("overflow-hidden rounded-lg border border-gray-200 bg-white")) {
+                        table(.class("min-w-full divide-y divide-gray-200")) {
+                            thead(.class("bg-gray-50")) {
+                                tr {
+                                    AdminTableHeader("")
+                                    AdminSortableTH(
+                                        "Received",
+                                        key: "receivedAt",
+                                        sort: sort,
+                                        basePath: "/admin/inbox",
+                                        queryItems: queryItems
                                     )
-                                ) {
-                                    td(.class("px-4 py-3 text-sm font-mono text-gray-500")) {
-                                        Self.dateFormatter.string(from: m.receivedAt)
-                                    }
-                                    td(.class("px-4 py-3 text-sm text-gray-700")) {
-                                        m.fromName ?? m.fromAddress
-                                    }
-                                    td(.class("px-4 py-3 text-sm")) {
-                                        a(
-                                            .href("/admin/inbox/\(m.id?.uuidString ?? "")"),
-                                            .class("text-indigo-700 hover:underline")
-                                        ) { m.subject }
-                                    }
-                                    td(.class("px-4 py-3 text-sm")) {
-                                        if m.acknowledgedAt == nil {
-                                            span(.class("text-amber-700")) { "unread" }
-                                        } else {
-                                            span(.class("text-gray-400")) { "read" }
+                                    AdminSortableTH(
+                                        "From",
+                                        key: "from",
+                                        sort: sort,
+                                        basePath: "/admin/inbox",
+                                        queryItems: queryItems
+                                    )
+                                    AdminSortableTH(
+                                        "Subject",
+                                        key: "subject",
+                                        sort: sort,
+                                        basePath: "/admin/inbox",
+                                        queryItems: queryItems
+                                    )
+                                    AdminTableHeader("Ack")
+                                }
+                            }
+                            tbody(.class("divide-y divide-gray-100")) {
+                                for m in messages {
+                                    tr(
+                                        .custom(
+                                            name: "data-acknowledged",
+                                            value: m.acknowledgedAt == nil ? "false" : "true"
+                                        )
+                                    ) {
+                                        td(.class("px-4 py-3 text-sm w-8")) {
+                                            input(
+                                                .type(.checkbox),
+                                                .name("ids[]"),
+                                                .value(m.id?.uuidString ?? "")
+                                            )
+                                        }
+                                        td(.class("px-4 py-3 text-sm font-mono text-gray-500")) {
+                                            Self.dateFormatter.string(from: m.receivedAt)
+                                        }
+                                        td(.class("px-4 py-3 text-sm text-gray-700")) {
+                                            m.fromName ?? m.fromAddress
+                                        }
+                                        td(.class("px-4 py-3 text-sm")) {
+                                            a(
+                                                .href("/admin/inbox/\(m.id?.uuidString ?? "")"),
+                                                .class("text-indigo-700 hover:underline")
+                                            ) { m.subject }
+                                        }
+                                        td(.class("px-4 py-3 text-sm")) {
+                                            if m.acknowledgedAt == nil {
+                                                span(.class("text-amber-700")) { "unread" }
+                                            } else {
+                                                span(.class("text-gray-400")) { "read" }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    div(.class("flex justify-end mt-4")) {
+                        SubmitButton("Acknowledge selected", variant: .primary)
+                    }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }

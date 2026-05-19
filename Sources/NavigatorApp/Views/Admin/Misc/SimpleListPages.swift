@@ -420,12 +420,13 @@ struct CredentialFormErrors: Sendable {
 struct InvoicesIndexPage: HTML {
     let brand: any Brand
     let invoices: [Invoice]
+    let pagination: AdminPagination
 
     var body: some HTML {
         AdminPageLayout(pageTitle: "Invoices", activeSection: .invoices, brand: brand) {
             div(.class("flex items-center justify-between mb-6")) {
                 p(.class("text-sm text-gray-600")) {
-                    "\(invoices.count) invoice\(invoices.count == 1 ? "" : "s")"
+                    "\(pagination.total) invoice\(pagination.total == 1 ? "" : "s")"
                 }
                 p(.class("text-xs text-gray-500")) {
                     "Invoices mirror an upstream billing provider (Xero) and are read-only here."
@@ -467,6 +468,7 @@ struct InvoicesIndexPage: HTML {
                         }
                     }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }
@@ -882,6 +884,7 @@ struct UsersIndexPage: HTML {
 struct UserRoleAuditIndexPage: HTML {
     let brand: any Brand
     let audits: [UserRoleAudit]
+    let pagination: AdminPagination
 
     var body: some HTML {
         AdminPageLayout(
@@ -890,7 +893,7 @@ struct UserRoleAuditIndexPage: HTML {
             brand: brand
         ) {
             p(.class("text-sm text-gray-600 mb-6")) {
-                "\(audits.count) audit entr\(audits.count == 1 ? "y" : "ies")"
+                "\(pagination.total) audit entr\(pagination.total == 1 ? "y" : "ies")"
             }
             if audits.isEmpty {
                 AdminEmptyState(
@@ -925,6 +928,7 @@ struct UserRoleAuditIndexPage: HTML {
                         }
                     }
                 }
+                AdminPaginationFooter(pagination: pagination)
             }
         }
     }
