@@ -63,8 +63,18 @@ func registerAdminInboxRoutes(_ app: Application, brand: any Brand) {
         let db = try await requireDatabaseService(req).db
         let thread = try await EmailMessageRepository(database: db)
             .findByThreadId(message.threadId)
+        let attachments = try await EmailAttachment.query(on: db)
+            .filter(\.$emailMessage.$id == message.id!)
+            .with(\.$blob)
+            .sort(\.$filename)
+            .all()
         return HTMLResponse {
-            InboxShowPage(brand: brand, message: message, thread: thread)
+            InboxShowPage(
+                brand: brand,
+                message: message,
+                thread: thread,
+                attachments: attachments
+            )
         }
     }
 
