@@ -121,7 +121,7 @@ private func notationsFeed(db: Database, since: Date?) async throws -> [AdminAct
             label: "Notation created",
             chipPalette: "bg-amber-100 text-amber-800",
             timestamp: created,
-            description: "Notation from \(n.template.code).",
+            description: "Notation from \(n.template.code ?? "\u{2014}").",
             href: "/admin/notations/\(n.id?.uuidString ?? "")"
         )
     }
