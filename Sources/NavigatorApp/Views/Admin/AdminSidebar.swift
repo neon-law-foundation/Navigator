@@ -44,6 +44,12 @@ struct AdminSidebar: HTML {
 /// A single sidebar nav link. Pulled out so the active vs inactive class
 /// branching reads cleanly and the `data-active` attribute is the single
 /// thing tests inspect.
+///
+/// The inbox row carries a `#inbox-badge` HTMX slot that polls
+/// `/admin/api/sidebar-badges/inbox` on load and every 30 seconds, so an
+/// operator on any admin page sees the unread count refresh without a
+/// full navigation. The slot starts empty — the route returns the badge
+/// markup when unread > 0 and a blank span otherwise.
 private struct AdminSidebarLink: HTML {
     let section: AdminSection
     let active: AdminSection
@@ -55,7 +61,19 @@ private struct AdminSidebarLink: HTML {
             .class(linkClasses(isActive: isActive)),
             .custom(name: "data-section", value: section.rawValue),
             .custom(name: "data-active", value: isActive ? "true" : "false")
-        ) { section.label }
+        ) {
+            span(.class("inline-flex items-center justify-between w-full")) {
+                span { section.label }
+                if section == .inbox {
+                    span(
+                        .id("inbox-badge"),
+                        .custom(name: "hx-get", value: "/admin/api/sidebar-badges/inbox"),
+                        .custom(name: "hx-trigger", value: "load, every 30s"),
+                        .custom(name: "hx-swap", value: "innerHTML")
+                    ) {}
+                }
+            }
+        }
     }
 
     private func linkClasses(isActive: Bool) -> String {
