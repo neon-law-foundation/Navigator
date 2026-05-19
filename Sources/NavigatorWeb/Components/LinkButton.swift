@@ -10,18 +10,28 @@ public struct LinkButton: HTML, Sendable {
     public let label: String
     public let href: String
     public let variant: ButtonVariant
+    /// Optional `data-shortcut="…"` attribute on the rendered anchor.
+    /// Lets admin pages mark a button as the target of a keyboard
+    /// shortcut (`Shift+N` opens the link marked `"new"`).
+    public let dataShortcut: String?
 
     public init(
         _ label: String,
         href: String,
-        variant: ButtonVariant = .secondary
+        variant: ButtonVariant = .secondary,
+        dataShortcut: String? = nil
     ) {
         self.label = label
         self.href = href
         self.variant = variant
+        self.dataShortcut = dataShortcut
     }
 
     public var body: some HTML {
         a(.href(href), .class(variant.classes)) { label }
+            .attributes(
+                .custom(name: "data-shortcut", value: dataShortcut ?? ""),
+                when: dataShortcut != nil
+            )
     }
 }

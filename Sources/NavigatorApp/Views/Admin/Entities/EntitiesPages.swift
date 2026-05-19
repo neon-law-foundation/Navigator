@@ -49,7 +49,12 @@ struct EntitiesIndexPage: HTML {
                 p(.class("text-sm text-gray-600")) {
                     "\(entities.count) entit\(entities.count == 1 ? "y" : "ies")"
                 }
-                LinkButton("New entity", href: "/admin/entities/new", variant: .primary)
+                LinkButton(
+                    "New entity",
+                    href: "/admin/entities/new",
+                    variant: .primary,
+                    dataShortcut: "new"
+                )
             }
             AdminFlashBanner(message: flash)
             AdminFilterBar(
@@ -93,6 +98,10 @@ struct EntitiesIndexPage: HTML {
                                     .custom(
                                         name: "data-entity-id",
                                         value: entity.id?.uuidString ?? ""
+                                    ),
+                                    .custom(
+                                        name: "data-row-href",
+                                        value: "/admin/entities/\(entity.id?.uuidString ?? "")"
                                     )
                                 ) {
                                     td(.class("px-4 py-3 text-sm")) {
