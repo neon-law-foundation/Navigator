@@ -108,6 +108,7 @@ public func routes(_ app: Application) throws {
 
     try registerAdminRoutes(app, brand: brand)
     registerAdminDashboardJSONRoutes(app)
+    registerAdminSidebarBadgeRoutes(app)
     registerAdminSearchRoutes(app, brand: brand)
     registerAdminProjectsRoutes(app, brand: brand)
     registerAdminPeopleRoutes(app, brand: brand)
